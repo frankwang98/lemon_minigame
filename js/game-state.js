@@ -182,12 +182,20 @@ export class GameState {
       cells: matches
     })
 
+    
     return true
   }
 
   finalizeElimination() {
     const matches = this.findMatches()
     if (!matches.length) return
+
+    if (matches.length >= 5) {
+      audio.playCombo()   // ⭐ 连击音效
+    } else {
+      audio.playNormal()  // ⭐ 普通消除音效
+    }
+
     this.removeMatches(matches)
     this.applyGravity()
   }
@@ -249,7 +257,7 @@ export class GameState {
       startTime: now,
       duration: 200,
       cells
-    })
+    })  
   }
 
   shuffleBoard() {

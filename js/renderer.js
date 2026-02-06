@@ -18,6 +18,23 @@ export class Renderer {
     this.lemonImages = []
     this.imagesLoaded = false
     this.loadImages()
+
+    this.motivationTexts = [
+      "今天也要元气满满地消除呀！🍋",
+      "慢慢来，柠檬也会变甜的。✨",
+      "再坚持一下，你比自己想象得更厉害！💪",
+      "每一步都算数，继续冲！🔥",
+      "小小一步，也能带来大大的改变。🌟",
+      "别急，节奏对了就能赢！🎯",
+      "你已经很棒了，再来一点点！🍀",
+      "保持专注，奇迹就在下一步！⚡",
+      "放轻松，享受消除的快乐！😄",
+      "加油，下一关等你来征服！🚀"
+    ]
+    
+    this.currentMotivationIndex = 0
+    this.lastMotivationSwitch = Date.now()
+    
   }
 
   loadImages() {
@@ -52,22 +69,59 @@ export class Renderer {
     ctx.fillStyle = GAME_CONFIG.textColor
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
+    ctx.fillStyle = '#2A1E00'
 
     const level = LEVELS[this.state.levelIndex]
 
-    ctx.font = '26px sans-serif'
+    ctx.font = 'bold 26px sans-serif'
     ctx.fillText('🍋 ' + GAME_CONFIG.title + ' 🍋', centerX, y)
-    y += 40
+    y += 45
 
-    ctx.font = '17px sans-serif'
-    ctx.fillText(`🕒 ${this.state.timeLeft}s     🌀 ${this.state.movesLeft}`, centerX, y)
+
+    ctx.font = '20px sans-serif'
+    ctx.fillText(`🕒 时间：${this.state.timeLeft}s     🌀 步数：${this.state.movesLeft}`, centerX, y)
     y += 28
 
     ctx.fillText(`🎯 目标：${this.state.target.score} 分`, centerX, y)
-    y += 28
+    y += 38
 
-    ctx.fillText(`🪙 当前得分：${this.state.score}`, centerX, y)
+    ctx.font = '25px sans-serif'
+    ctx.fillText(`当前得分：${this.state.score}`, centerX, y)
   }
+
+  drawLevelInfo() {
+    const ctx = this.ctx
+    const centerX = this.width / 2
+    const y = GAME_CONFIG.gridTopOffset + this.gridHeight + 20
+  
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    ctx.font = 'bold 22px sans-serif'
+    ctx.fillStyle = '#3A2500'
+    ctx.fillText(`第 ${this.state.levelIndex + 1} 关`, centerX, y)
+  }
+  
+  drawMotivation(now) {
+    // 每 5 秒切换一句
+    if (now - this.lastMotivationSwitch > 5000) {
+      this.currentMotivationIndex =
+        (this.currentMotivationIndex + 1) % this.motivationTexts.length
+      this.lastMotivationSwitch = now
+    }
+  
+    const text = this.motivationTexts[this.currentMotivationIndex]
+  
+    const ctx = this.ctx
+    const centerX = this.width / 2
+    const y = GAME_CONFIG.gridTopOffset + this.gridHeight + 60
+  
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    ctx.font = '18px sans-serif'
+    ctx.fillStyle = '#5A3A00'
+    ctx.fillText(text, centerX, y)
+  }
+  
 
   drawGridBackground() {
     const ctx = this.ctx
@@ -193,6 +247,8 @@ export class Renderer {
     this.drawGridBackground()
     this.drawLemons(now)
     this.drawSelection()
+    this.drawLevelInfo()
+    this.drawMotivation(now)
     this.drawPhaseOverlay()
     this.drawStartOverlay()
   }

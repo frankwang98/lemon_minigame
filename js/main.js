@@ -3,6 +3,7 @@ import { GameState } from './game-state.js'
 import { Renderer } from './renderer.js'
 import { UIManager } from './ui.js'
 import { InputManager } from './input.js'
+import { AudioManager } from './audio.js'
 
 const { windowWidth, windowHeight, pixelRatio } = wx.getSystemInfoSync()
 
@@ -82,3 +83,11 @@ gameState.loadLevel(0)
 new InputManager(canvas, renderer, uiManager, gameState, onStateChanged, onUseTool)
 
 renderFrame()
+
+// audio
+const audio = new AudioManager()
+audio.init()
+audio.playBGM()
+
+// 挂到全局，game-state.js 可以访问
+globalThis.audio = audio

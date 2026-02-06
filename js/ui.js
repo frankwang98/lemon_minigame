@@ -11,12 +11,42 @@ export class UIManager {
     this.buttons = []
   }
 
+  drawSoundButton() {
+    const ctx = this.ctx
+    const x = this.width - 60
+    const y = 100
+    const w = 40
+    const h = 40
+    const r = 20
+  
+    // 背景
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(x + r, y + r, r, 0, Math.PI * 2)
+    ctx.fillStyle = '#FFCF4A'
+    ctx.shadowColor = 'rgba(0,0,0,0.22)'
+    ctx.shadowBlur = 6
+    ctx.shadowOffsetY = 3
+    ctx.fill()
+    ctx.restore()
+  
+    // 图标
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.font = '22px sans-serif'
+    ctx.fillStyle = '#3A2500'
+  
+    const icon = (globalThis.audio && globalThis.audio.enabledSfx) ? '🔊' : '🔇'
+    ctx.fillText(icon, x + r, y + r)
+  }
+  
+
   layoutButtons() {
     this.buttons = []
     const margin = GAME_CONFIG.buttonMargin
     const h = GAME_CONFIG.buttonHeight
     const fullWidth = this.width - margin * 2
-
+  
     if (this.state.gamePhase === 'ready') {
       const w = fullWidth
       const x = margin
@@ -66,6 +96,7 @@ export class UIManager {
   drawButtons() {
     const ctx = this.ctx
     this.layoutButtons()
+    this.drawSoundButton()
   
     this.buttons.forEach(btn => {
       // ⭐ 道具按钮更大：高度 +8px，字体更大

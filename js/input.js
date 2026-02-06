@@ -28,6 +28,12 @@ export class InputManager {
       return
     }
 
+    if (this.hitSoundButton(x, y)) {
+      globalThis.audio.toggleSfx()
+      globalThis.audio.toggleMusic()
+      return
+    }    
+
     // 未开始游戏不能操作棋盘
     if (this.state.gamePhase !== 'playing') return
 
@@ -87,6 +93,17 @@ export class InputManager {
     }
   }
 
+  hitSoundButton(x, y) {
+    const bx = this.ui.width - 60
+    const by = 100
+    const bw = 40
+    const bh = 40
+  
+    return x >= bx && x <= bx + bw &&
+           y >= by && y <= by + bh
+  }
+  
+
   handleButton(id) {
     // ⭐ 开始游戏
     if (id === 'startGame') {
@@ -140,6 +157,7 @@ export class InputManager {
     if (id === 'tool_swap') {
       this.currentTool = 'swap'
       return
-    }
+    }  
+
   }
 }
