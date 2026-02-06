@@ -35,8 +35,8 @@ export class UIManager {
     ctx.textBaseline = 'middle'
     ctx.font = '22px sans-serif'
     ctx.fillStyle = '#3A2500'
-  
-    const icon = (globalThis.audio && globalThis.audio.enabledSfx) ? '🔊' : '🔇'
+    // 音乐开关图标
+    const icon = (globalThis.audio && globalThis.audio.enabledMusic) ? '🔊' : '🔇'
     ctx.fillText(icon, x + r, y + r)
   }
   

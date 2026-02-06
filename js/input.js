@@ -29,7 +29,7 @@ export class InputManager {
     }
 
     if (this.hitSoundButton(x, y)) {
-      globalThis.audio.toggleSfx()
+      // globalThis.audio.toggleSfx()
       globalThis.audio.toggleMusic()
       return
     }    
@@ -135,29 +135,38 @@ export class InputManager {
       return
     }
 
-    // ⭐ 道具：刷新
-    if (id === 'tool_shuffle') {
-      if (this.state.tools.shuffle > 0) {
-        this.state.tools.shuffle--
-        this.onUseTool('shuffle')
-      } else {
-        this.state.requestToolByShare('shuffle')
-      }
-      this.onStateChanged()
-      return
-    }
+    // ⭐ 道具：刷新（立即执行 → 立即扣）
+if (id === 'tool_shuffle') {
+  if (this.state.tools.shuffle > 0) {
+    this.state.tools.shuffle--
+    this.onUseTool('shuffle')
+  } else {
+    this.state.requestToolByShare('shuffle')
+  }
+  this.onStateChanged()
+  return
+}
 
-    // ⭐ 道具：爆破
-    if (id === 'tool_bomb') {
-      this.currentTool = 'bomb'
-      return
-    }
+// ⭐ 道具：爆破（进入模式，不扣次数）
+if (id === 'tool_bomb') {
+  if (this.state.tools.bomb > 0) {
+    this.currentTool = 'bomb'
+  } else {
+    this.state.requestToolByShare('bomb')
+  }
+  return
+}
 
-    // ⭐ 道具：换位
-    if (id === 'tool_swap') {
-      this.currentTool = 'swap'
-      return
-    }  
+// ⭐ 道具：换位（进入模式，不扣次数）
+if (id === 'tool_swap') {
+  if (this.state.tools.swap > 0) {
+    this.currentTool = 'swap'
+  } else {
+    this.state.requestToolByShare('swap')
+  }
+  return
+}
+
 
   }
 }
