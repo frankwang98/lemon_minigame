@@ -1,5 +1,6 @@
 // src/renderer.js
 import { GAME_CONFIG } from './config.js'
+import { LEVELS } from './levels.js'
 
 export class Renderer {
   constructor(canvas, ctx, gameState) {
@@ -10,29 +11,76 @@ export class Renderer {
     this.gridWidth = canvas.width - GAME_CONFIG.padding * 2
     this.gridHeight = this.gridWidth
     this.cellSize = this.gridWidth / GAME_CONFIG.cols
+
+    this.lemonImages = []
+    this.imagesLoaded = false
+    this.loadImages()
   }
 
-  clear() {
-    this.ctx.fillStyle = GAME_CONFIG.backgroundColor
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+  loadImages() {
+    let loaded = 0
+    GAME_CONFIG.lemonImagePaths.forEach((path, index) => {
+      const img = wx.createImage()
+      img.onload = () => {
+        loaded++
+        if (loaded === GAME_CONFIG.lemonImagePaths.length) {
+          this.imagesLoaded = true
+        }
+      }
+      img.src = path
+      this.lemonImages[index] = img
+    })
   }
 
+  drawBackground() {
+    const ctx = this.ctx
+    const gradient = ctx.createLinearGradient(0, 0, 0, this.canvas.height)
+    gradient.addColorStop(0, GAME_CONFIG.backgroundTop)
+    gradient.addColorStop(1, GAME_CONFIG.backgroundBottom)
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+  }
+
+  // ⭐⭐⭐ 标题整体下移 + 更 Q 萌 + 更协调
   drawHeader() {
     const ctx = this.ctx
+    const centerX = this.canvas.width / 2
+
+    // 标题整体下移到 70px
+    let y = 70
+
     ctx.fillStyle = GAME_CONFIG.textColor
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
-  
-    const centerX = this.canvas.width / 2
-    const top = 80   // 原来是 24，现在整体下移
-  
+
+    const level = LEVELS[this.state.levelIndex]
+
+    // 主标题
     ctx.font = '26px sans-serif'
-    ctx.fillText(GAME_CONFIG.title, centerX, top)
-  
-    ctx.font = '16px sans-serif'
-    ctx.fillText(`分数：${this.state.score}`, centerX, top + 36)
+    ctx.fillText('🍋 ' + GAME_CONFIG.title + ' 🍋', centerX, y)
+    y += 40
+
+    // 关卡
+    ctx.font = '17px sans-serif'
+    ctx.fillText(`关卡 ${level.id} / ${LEVELS.length}`, centerX, y)
+    y += 28
+
+    // 目标
+    let targetText = ''
+    if (this.state.target && this.state.target.score) {
+      targetText = `🎯 目标：得分 ${this.state.target.score}`
+    } else if (this.state.target && this.state.target.collect) {
+      const t = this.state.target.collect
+      targetText = `🎯 目标：收集 ${t.count} 个元素 ${t.type + 1}`
+    } else {
+      targetText = '🎯 目标：自由消除'
+    }
+    ctx.fillText(targetText, centerX, y)
+    y += 28
+
+    // 分数 + 步数
+    ctx.fillText(`🪙 ${this.state.score}     🌀 ${this.state.movesLeft}`, centerX, y)
   }
-  
 
   drawGridBackground() {
     const ctx = this.ctx
@@ -41,7 +89,7 @@ export class Renderer {
     const w = this.gridWidth
     const h = this.gridHeight
     const r = 20
-  
+
     ctx.fillStyle = GAME_CONFIG.gridBgColor
     ctx.beginPath()
     ctx.moveTo(x + r, y)
@@ -55,34 +103,52 @@ export class Renderer {
     ctx.quadraticCurveTo(x, y, x + r, y)
     ctx.fill()
   }
-  
 
-  drawLemons() {
+  drawLemons(now) {
+    if (!this.imagesLoaded) return
     const ctx = this.ctx
     const x0 = GAME_CONFIG.padding
     const y0 = GAME_CONFIG.gridTopOffset
+
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.12)'
+    ctx.shadowBlur = 6
+    ctx.shadowOffsetY = 3
 
     for (let r = 0; r < this.state.rows; r++) {
       for (let c = 0; c < this.state.cols; c++) {
         const type = this.state.board[r][c]
         if (type === null || type === undefined) continue
 
-        const cx = x0 + c * this.cellSize + this.cellSize / 2
-        const cy = y0 + r * this.cellSize + this.cellSize / 2
-        const radius = this.cellSize * 0.38
+        let cx = x0 + c * this.cellSize + this.cellSize / 2
+        let cy = y0 + r * this.cellSize + this.cellSize / 2
+        let scale = 1
+        let alpha = 1
 
-        ctx.beginPath()
-        ctx.fillStyle = GAME_CONFIG.lemonColors[type]
-        ctx.arc(cx, cy, radius, 0, Math.PI * 2)
-        ctx.fill()
+        // 消除动画
+        this.state.animations.forEach(anim => {
+          const t = (now - anim.startTime) / anim.duration
+          if (t < 0 || t > 1) return
+          if (anim.type === 'eliminate') {
+            if (anim.cells.some(p => p.col === c && p.row === r)) {
+              scale = 1 - 0.7 * t
+              alpha = 1 - t
+            }
+          }
+        })
 
-        // 高光
-        ctx.beginPath()
-        ctx.fillStyle = 'rgba(255,255,255,0.6)'
-        ctx.arc(cx - radius / 3, cy - radius / 3, radius / 3, 0, Math.PI * 2)
-        ctx.fill()
+        const size = this.cellSize * 0.8 * scale
+        const x = cx - size / 2
+        const y = cy - size / 2
+
+        ctx.save()
+        ctx.globalAlpha = alpha
+        ctx.drawImage(this.lemonImages[type], x, y, size, size)
+        ctx.restore()
       }
     }
+
+    ctx.restore()
   }
 
   drawSelection() {
@@ -99,26 +165,55 @@ export class Renderer {
     ctx.strokeRect(x + 2, y + 2, this.cellSize - 4, this.cellSize - 4)
   }
 
-  drawBackground() {
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
-    gradient.addColorStop(0, '#FFFDF5')
-    gradient.addColorStop(1, '#FFF7D6')
-  
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-  }
-  
+  drawPhaseOverlay() {
+    const ctx = this.ctx
+    if (this.state.gamePhase === 'levelClear' || this.state.gamePhase === 'gameOver') {
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'
+      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
 
-  render() {
-    this.clear()
+      ctx.fillStyle = '#FFFFFF'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = '26px sans-serif'
+
+      if (this.state.gamePhase === 'levelClear') {
+        ctx.fillText('🎉 关卡完成！', this.canvas.width / 2, this.canvas.height / 2 - 20)
+      } else {
+        ctx.fillText('💔 挑战失败', this.canvas.width / 2, this.canvas.height / 2 - 20)
+      }
+
+      ctx.font = '16px sans-serif'
+      ctx.fillText('使用下方按钮继续', this.canvas.width / 2, this.canvas.height / 2 + 12)
+    }
+  }
+
+  drawMenu() {
+    const ctx = this.ctx
+    this.drawBackground()
+    ctx.fillStyle = GAME_CONFIG.textColor
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+
+    ctx.font = '30px sans-serif'
+    ctx.fillText('🍋 ' + GAME_CONFIG.title + ' 🍋', this.canvas.width / 2, this.canvas.height / 2 - 40)
+
+    ctx.font = '16px sans-serif'
+    ctx.fillText('轻触下方“开始游戏”按钮', this.canvas.width / 2, this.canvas.height / 2 + 4)
+  }
+
+  render(now) {
+    this.drawBackground()
+    if (this.state.gamePhase === 'menu') {
+      this.drawMenu()
+      return
+    }
     this.drawHeader()
     this.drawGridBackground()
-    this.drawLemons()
+    this.drawLemons(now)
     this.drawSelection()
-    this.drawBackground()
+    this.drawPhaseOverlay()
   }
 
-  // 工具：坐标转格子
   pointToCell(x, y) {
     const x0 = GAME_CONFIG.padding
     const y0 = GAME_CONFIG.gridTopOffset

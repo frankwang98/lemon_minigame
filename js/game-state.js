@@ -1,18 +1,53 @@
 // src/game-state.js
 import { GAME_CONFIG } from './config.js'
+import { LEVELS } from './levels.js'
 
 export class GameState {
   constructor() {
     this.cols = GAME_CONFIG.cols
     this.rows = GAME_CONFIG.rows
+
+    this.levelIndex = 0
     this.score = 0
-    this.selectedCell = null // {col, row}
+    this.totalScore = 0
+    this.movesLeft = 0
+    this.timeLeft = 0
+
+    this.target = null
+    this.collected = [0, 0, 0, 0]
+
     this.board = []
-    this.initBoard()
+    this.selectedCell = null
+    this.animations = []
+
+    this.gamePhase = 'ready' // ready / playing / levelClear / gameOver
+
+    // 道具
+    this.tools = {
+      shuffle: GAME_CONFIG.initialTools,
+      bomb: GAME_CONFIG.initialTools,
+      swap: GAME_CONFIG.initialTools
+    }
   }
 
   randomLemon() {
     return Math.floor(Math.random() * GAME_CONFIG.lemonTypes)
+  }
+
+  loadLevel(index) {
+    this.levelIndex = index
+    const level = LEVELS[index]
+
+    this.score = 0
+    this.movesLeft = level.moves
+    this.timeLeft = level.time
+    this.target = level.target
+    this.collected = [0, 0, 0, 0]
+
+    this.selectedCell = null
+    this.initBoard()
+
+    this.gamePhase = 'ready'
   }
 
   initBoard() {
@@ -32,9 +67,7 @@ export class GameState {
 
   causesImmediateMatch(c, r, row, board) {
     const type = row[c]
-    // 横向
     if (c >= 2 && row[c - 1] === type && row[c - 2] === type) return true
-    // 纵向
     if (r >= 2 && board[r - 1] && board[r - 2]) {
       if (board[r - 1][c] === type && board[r - 2][c] === type) return true
     }
@@ -54,11 +87,12 @@ export class GameState {
   isAdjacent(a, b) {
     const dx = Math.abs(a.col - b.col)
     const dy = Math.abs(a.row - b.row)
-    return (dx + dy === 1)
+    return dx + dy === 1
   }
 
   findMatches() {
     const matches = []
+
     // 横向
     for (let r = 0; r < this.rows; r++) {
       let count = 1
@@ -77,6 +111,7 @@ export class GameState {
         }
       }
     }
+
     // 纵向
     for (let c = 0; c < this.cols; c++) {
       let count = 1
@@ -95,7 +130,7 @@ export class GameState {
         }
       }
     }
-    // 去重
+
     const key = p => `${p.col},${p.row}`
     const map = {}
     matches.forEach(m => { map[key(m)] = m })
@@ -104,11 +139,19 @@ export class GameState {
 
   removeMatches(matches) {
     if (!matches.length) return 0
+
     matches.forEach(({ col, row }) => {
+      const type = this.board[row][col]
+      if (this.target && this.target.collect && this.target.collect.type === type) {
+        this.collected[type]++
+      }
       this.board[row][col] = null
     })
+
     const gained = matches.length * 10
     this.score += gained
+    this.totalScore += gained
+
     return gained
   }
 
@@ -128,30 +171,122 @@ export class GameState {
     }
   }
 
-  resolveBoard() {
-    let totalRemoved = 0
-    while (true) {
-      const matches = this.findMatches()
-      if (!matches.length) break
-      totalRemoved += this.removeMatches(matches)
-      this.applyGravity()
-    }
-    return totalRemoved
+  resolveBoardWithAnimation(now) {
+    const matches = this.findMatches()
+    if (!matches.length) return false
+
+    this.animations.push({
+      type: 'eliminate',
+      startTime: now,
+      duration: 200,
+      cells: matches
+    })
+
+    return true
   }
 
-  trySwapAndResolve(a, b) {
+  finalizeElimination() {
+    const matches = this.findMatches()
+    if (!matches.length) return
+    this.removeMatches(matches)
+    this.applyGravity()
+  }
+
+  trySwapAndResolve(a, b, now) {
     if (!this.isAdjacent(a, b)) return false
+
     this.swapCells(a, b)
     const matches = this.findMatches()
+
     if (!matches.length) {
-      // 不产生消除，换回去
       this.swapCells(a, b)
       return false
     }
-    // 有消除，先处理一次，再连锁
-    this.removeMatches(matches)
-    this.applyGravity()
-    this.resolveBoard()
+
+    this.movesLeft--
+
+    this.animations.push({
+      type: 'swap',
+      startTime: now,
+      duration: 150,
+      from: a,
+      to: b
+    })
+
     return true
+  }
+
+  checkLevelStatus() {
+    if (this.timeLeft <= 0 || this.movesLeft <= 0) {
+      this.gamePhase = 'gameOver'
+      return
+    }
+
+    if (this.target.score && this.score >= this.target.score) {
+      this.gamePhase = 'levelClear'
+      return
+    }
+
+    if (this.target.collect) {
+      const t = this.target.collect
+      if (this.collected[t.type] >= t.count) {
+        this.gamePhase = 'levelClear'
+        return
+      }
+    }
+  }
+
+  useBombAt(cell, now) {
+    const cells = []
+    for (let r = cell.row - 1; r <= cell.row + 1; r++) {
+      for (let c = cell.col - 1; c <= cell.col + 1; c++) {
+        if (this.inBounds(c, r)) cells.push({ col: c, row: r })
+      }
+    }
+
+    this.animations.push({
+      type: 'eliminate',
+      startTime: now,
+      duration: 200,
+      cells
+    })
+  }
+
+  shuffleBoard() {
+    const flat = []
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        flat.push(this.board[r][c])
+      }
+    }
+
+    for (let i = flat.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const t = flat[i]
+      flat[i] = flat[j]
+      flat[j] = t
+    }
+
+    let idx = 0
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        this.board[r][c] = flat[idx++]
+      }
+    }
+  }
+
+  // ⭐⭐⭐ 分享获得道具（B 真分享）
+  requestToolByShare(tool) {
+    wx.shareAppMessage({
+      title: '柠檬大消除',
+      imageUrl: 'assets/images/share.png',
+      success: () => {
+        this.tools[tool]++
+      }
+    })
+
+    /* ⭐⭐⭐ A 假分享（注释保留）
+    this.tools[tool]++
+    */
   }
 }
