@@ -4,24 +4,31 @@ import { Renderer } from './renderer.js'
 import { UIManager } from './ui.js'
 import { InputManager } from './input.js'
 
-const { windowWidth, windowHeight } = wx.getSystemInfoSync()
+const { windowWidth, windowHeight, pixelRatio } = wx.getSystemInfoSync()
+
+// 逻辑尺寸（用来算布局）
+const logicalWidth = windowWidth
+const logicalHeight = windowHeight
 
 const canvas = wx.createCanvas()
 const ctx = canvas.getContext('2d')
 
-canvas.width = windowWidth
-canvas.height = windowHeight
+// 物理尺寸（真实像素，用来变清晰）
+canvas.width = logicalWidth * pixelRatio
+canvas.height = logicalHeight * pixelRatio
+
+// 把坐标系缩放回“逻辑尺寸”
+ctx.scale(pixelRatio, pixelRatio)
 
 const gameState = new GameState()
-const renderer = new Renderer(canvas, ctx, gameState)
-const uiManager = new UIManager(canvas, ctx, gameState)
+const renderer = new Renderer(canvas, ctx, gameState, logicalWidth, logicalHeight)
+const uiManager = new UIManager(canvas, ctx, gameState, logicalWidth, logicalHeight)
 
 let lastTick = Date.now()
 
 function renderFrame() {
   const now = Date.now()
 
-  // ⭐ 时间倒计时（仅 playing 状态）
   if (gameState.gamePhase === 'playing') {
     if (now - lastTick >= 1000) {
       gameState.timeLeft--
@@ -32,7 +39,6 @@ function renderFrame() {
     }
   }
 
-  // ⭐ 动画处理
   if (gameState.animations.length) {
     gameState.animations = gameState.animations.filter(anim => {
       const t = now - anim.startTime
@@ -51,9 +57,7 @@ function renderFrame() {
   requestAnimationFrame(renderFrame)
 }
 
-function onStateChanged() {
-  // 渲染循环常驻，不需要额外操作
-}
+function onStateChanged() {}
 
 function onUseTool(tool, data) {
   const now = Date.now()
@@ -73,9 +77,8 @@ function onUseTool(tool, data) {
   }
 }
 
-new InputManager(canvas, renderer, uiManager, gameState, onStateChanged, onUseTool)
-
-// ⭐ 游戏启动时直接加载第一关
 gameState.loadLevel(0)
+
+new InputManager(canvas, renderer, uiManager, gameState, onStateChanged, onUseTool)
 
 renderFrame()

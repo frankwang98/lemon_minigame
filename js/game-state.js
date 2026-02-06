@@ -47,7 +47,7 @@ export class GameState {
     this.selectedCell = null
     this.initBoard()
 
-    this.gamePhase = 'ready'
+    this.gamePhase = index === 0 ? 'ready' : 'playing'
   }
 
   initBoard() {

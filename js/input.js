@@ -99,6 +99,7 @@ export class InputManager {
     if (id === 'nextLevel') {
       const next = Math.min(this.state.levelIndex + 1, 9)
       this.state.loadLevel(next)
+      this.state.gamePhase = 'playing'
       this.onStateChanged()
       return
     }

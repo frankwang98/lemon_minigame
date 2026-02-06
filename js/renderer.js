@@ -3,12 +3,15 @@ import { GAME_CONFIG } from './config.js'
 import { LEVELS } from './levels.js'
 
 export class Renderer {
-  constructor(canvas, ctx, gameState) {
+  constructor(canvas, ctx, gameState, logicalWidth, logicalHeight) {
     this.canvas = canvas
     this.ctx = ctx
     this.state = gameState
 
-    this.gridWidth = canvas.width - GAME_CONFIG.padding * 2
+    this.width = logicalWidth
+    this.height = logicalHeight
+
+    this.gridWidth = this.width - GAME_CONFIG.padding * 2
     this.gridHeight = this.gridWidth
     this.cellSize = this.gridWidth / GAME_CONFIG.cols
 
@@ -34,19 +37,16 @@ export class Renderer {
 
   drawBackground() {
     const ctx = this.ctx
-    const gradient = ctx.createLinearGradient(0, 0, 0, this.canvas.height)
+    const gradient = ctx.createLinearGradient(0, 0, 0, this.height)
     gradient.addColorStop(0, GAME_CONFIG.backgroundTop)
     gradient.addColorStop(1, GAME_CONFIG.backgroundBottom)
     ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+    ctx.fillRect(0, 0, this.width, this.height)
   }
 
-  // ⭐⭐⭐ 标题整体下移 + 更 Q 萌 + 更协调
   drawHeader() {
     const ctx = this.ctx
-    const centerX = this.canvas.width / 2
-
-    // 标题整体下移到 70px
+    const centerX = this.width / 2
     let y = 70
 
     ctx.fillStyle = GAME_CONFIG.textColor
@@ -55,31 +55,18 @@ export class Renderer {
 
     const level = LEVELS[this.state.levelIndex]
 
-    // 主标题
     ctx.font = '26px sans-serif'
     ctx.fillText('🍋 ' + GAME_CONFIG.title + ' 🍋', centerX, y)
     y += 40
 
-    // 关卡
     ctx.font = '17px sans-serif'
-    ctx.fillText(`关卡 ${level.id} / ${LEVELS.length}`, centerX, y)
+    ctx.fillText(`🕒 ${this.state.timeLeft}s     🌀 ${this.state.movesLeft}`, centerX, y)
     y += 28
 
-    // 目标
-    let targetText = ''
-    if (this.state.target && this.state.target.score) {
-      targetText = `🎯 目标：得分 ${this.state.target.score}`
-    } else if (this.state.target && this.state.target.collect) {
-      const t = this.state.target.collect
-      targetText = `🎯 目标：收集 ${t.count} 个元素 ${t.type + 1}`
-    } else {
-      targetText = '🎯 目标：自由消除'
-    }
-    ctx.fillText(targetText, centerX, y)
+    ctx.fillText(`🎯 目标：${this.state.target.score} 分`, centerX, y)
     y += 28
 
-    // 分数 + 步数
-    ctx.fillText(`🪙 ${this.state.score}     🌀 ${this.state.movesLeft}`, centerX, y)
+    ctx.fillText(`🪙 当前得分：${this.state.score}`, centerX, y)
   }
 
   drawGridBackground() {
@@ -125,7 +112,6 @@ export class Renderer {
         let scale = 1
         let alpha = 1
 
-        // 消除动画
         this.state.animations.forEach(anim => {
           const t = (now - anim.startTime) / anim.duration
           if (t < 0 || t > 1) return
@@ -169,7 +155,7 @@ export class Renderer {
     const ctx = this.ctx
     if (this.state.gamePhase === 'levelClear' || this.state.gamePhase === 'gameOver') {
       ctx.fillStyle = 'rgba(0,0,0,0.35)'
-      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+      ctx.fillRect(0, 0, this.width, this.height)
 
       ctx.fillStyle = '#FFFFFF'
       ctx.textAlign = 'center'
@@ -177,41 +163,38 @@ export class Renderer {
       ctx.font = '26px sans-serif'
 
       if (this.state.gamePhase === 'levelClear') {
-        ctx.fillText('🎉 关卡完成！', this.canvas.width / 2, this.canvas.height / 2 - 20)
+        ctx.fillText('🎉 关卡完成！', this.width / 2, this.height / 2 - 20)
       } else {
-        ctx.fillText('💔 挑战失败', this.canvas.width / 2, this.canvas.height / 2 - 20)
+        ctx.fillText('💔 挑战失败', this.width / 2, this.height / 2 - 20)
       }
 
       ctx.font = '16px sans-serif'
-      ctx.fillText('使用下方按钮继续', this.canvas.width / 2, this.canvas.height / 2 + 12)
+      ctx.fillText('使用下方按钮继续', this.width / 2, this.height / 2 + 12)
     }
   }
 
-  drawMenu() {
+  drawStartOverlay() {
+    if (this.state.gamePhase !== 'ready') return
+
     const ctx = this.ctx
-    this.drawBackground()
-    ctx.fillStyle = GAME_CONFIG.textColor
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'
+    ctx.fillRect(0, 0, this.width, this.height)
+
+    ctx.fillStyle = '#FFFFFF'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-
-    ctx.font = '30px sans-serif'
-    ctx.fillText('🍋 ' + GAME_CONFIG.title + ' 🍋', this.canvas.width / 2, this.canvas.height / 2 - 40)
-
-    ctx.font = '16px sans-serif'
-    ctx.fillText('轻触下方“开始游戏”按钮', this.canvas.width / 2, this.canvas.height / 2 + 4)
+    ctx.font = '24px sans-serif'
+    ctx.fillText('点击下方按钮开始游戏', this.width / 2, this.height / 2)
   }
 
   render(now) {
     this.drawBackground()
-    if (this.state.gamePhase === 'menu') {
-      this.drawMenu()
-      return
-    }
     this.drawHeader()
     this.drawGridBackground()
     this.drawLemons(now)
     this.drawSelection()
     this.drawPhaseOverlay()
+    this.drawStartOverlay()
   }
 
   pointToCell(x, y) {

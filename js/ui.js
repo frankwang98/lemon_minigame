@@ -2,10 +2,12 @@
 import { GAME_CONFIG } from './config.js'
 
 export class UIManager {
-  constructor(canvas, ctx, gameState) {
+  constructor(canvas, ctx, gameState, logicalWidth, logicalHeight) {
     this.canvas = canvas
     this.ctx = ctx
     this.state = gameState
+    this.width = logicalWidth
+    this.height = logicalHeight
     this.buttons = []
   }
 
@@ -13,20 +15,18 @@ export class UIManager {
     this.buttons = []
     const margin = GAME_CONFIG.buttonMargin
     const h = GAME_CONFIG.buttonHeight
-    const fullWidth = this.canvas.width - margin * 2
+    const fullWidth = this.width - margin * 2
 
-    // ⭐⭐⭐ ready 状态：显示“开始游戏”
     if (this.state.gamePhase === 'ready') {
       const w = fullWidth
       const x = margin
-      const y = this.canvas.height - 140
+      const y = this.height - 140
       this.buttons.push({ id: 'startGame', x, y, w, h, text: '开始游戏' })
       return
     }
 
-    // ⭐⭐⭐ playing 状态：显示道具
     if (this.state.gamePhase === 'playing') {
-      const y = this.canvas.height - 80
+      const y = this.height - 80
       const count = 3
       const gap = margin
       const w = (fullWidth - gap * (count - 1)) / count
@@ -40,30 +40,24 @@ export class UIManager {
       return
     }
 
-    // ⭐⭐⭐ levelClear
     if (this.state.gamePhase === 'levelClear') {
-      const y = this.canvas.height - 120
-      const count = 2
-      const gap = margin
-      const w = (fullWidth - gap) / 2
+      const y = this.height - 120
+      const w = (fullWidth - margin) / 2
       let x = margin
 
       this.buttons.push({ id: 'nextLevel', x, y, w, h, text: '下一关' })
-      x += w + gap
+      x += w + margin
       this.buttons.push({ id: 'shareTool', x, y, w, h, text: '分享获得道具' })
       return
     }
 
-    // ⭐⭐⭐ gameOver
     if (this.state.gamePhase === 'gameOver') {
-      const y = this.canvas.height - 120
-      const count = 2
-      const gap = margin
-      const w = (fullWidth - gap) / 2
+      const y = this.height - 120
+      const w = (fullWidth - margin) / 2
       let x = margin
 
       this.buttons.push({ id: 'restart', x, y, w, h, text: '重试' })
-      x += w + gap
+      x += w + margin
       this.buttons.push({ id: 'shareTool', x, y, w, h, text: '分享获得道具' })
       return
     }
@@ -72,46 +66,62 @@ export class UIManager {
   drawButtons() {
     const ctx = this.ctx
     this.layoutButtons()
-
+  
     this.buttons.forEach(btn => {
-      const r = btn.h / 2
+      // ⭐ 道具按钮更大：高度 +8px，字体更大
+      const isTool = btn.id.startsWith('tool_')
+      const extraH = isTool ? 8 : 0
+      const h = btn.h + extraH
+      const y = btn.y - extraH / 2
+      const r = h / 2
+  
+      // ⭐ 更饱和的柠檬橙背景 + 更强阴影
       ctx.save()
       ctx.beginPath()
-      ctx.moveTo(btn.x + r, btn.y)
-      ctx.lineTo(btn.x + btn.w - r, btn.y)
-      ctx.quadraticCurveTo(btn.x + btn.w, btn.y, btn.x + btn.w, btn.y + r)
-      ctx.lineTo(btn.x + btn.w, btn.y + btn.h - r)
-      ctx.quadraticCurveTo(btn.x + btn.w, btn.y + btn.h, btn.x + btn.w - r, btn.y + btn.h)
-      ctx.lineTo(btn.x + r, btn.y + btn.h)
-      ctx.quadraticCurveTo(btn.x, btn.y + btn.h, btn.x, btn.y + btn.h - r)
-      ctx.lineTo(btn.x, btn.y + r)
-      ctx.quadraticCurveTo(btn.x, btn.y, btn.x + r, btn.y)
-
-      const gradient = ctx.createLinearGradient(btn.x, btn.y, btn.x, btn.y + btn.h)
-      gradient.addColorStop(0, '#FFE066')
-      gradient.addColorStop(1, '#FFD43B')
+      ctx.moveTo(btn.x + r, y)
+      ctx.lineTo(btn.x + btn.w - r, y)
+      ctx.quadraticCurveTo(btn.x + btn.w, y, btn.x + btn.w, y + r)
+      ctx.lineTo(btn.x + btn.w, y + h - r)
+      ctx.quadraticCurveTo(btn.x + btn.w, y + h, btn.x + btn.w - r, y + h)
+      ctx.lineTo(btn.x + r, y + h)
+      ctx.quadraticCurveTo(btn.x, y + h, btn.x, y + h - r)
+      ctx.lineTo(btn.x, y + r)
+      ctx.quadraticCurveTo(btn.x, y, btn.x + r, y)
+  
+      const gradient = ctx.createLinearGradient(btn.x, y, btn.x, y + h)
+      gradient.addColorStop(0, '#FFCF4A')
+      gradient.addColorStop(1, '#FFB020')
       ctx.fillStyle = gradient
-      ctx.shadowColor = 'rgba(0,0,0,0.15)'
-      ctx.shadowBlur = 4
-      ctx.shadowOffsetY = 2
+  
+      ctx.shadowColor = 'rgba(0,0,0,0.22)'
+      ctx.shadowBlur = 8
+      ctx.shadowOffsetY = 4
       ctx.fill()
       ctx.restore()
-
-      ctx.fillStyle = '#FFFFFF'
+  
+      // ⭐ 轻描边
+      ctx.lineWidth = 1
+      ctx.strokeStyle = 'rgba(255,255,255,0.65)'
+      ctx.stroke()
+  
+      // ⭐ 字体更醒目：深棕色 + 更大字号
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-
+      ctx.fillStyle = '#3A2500'
+  
       if (btn.icon) {
-        ctx.font = '18px sans-serif'
-        ctx.fillText(btn.icon, btn.x + btn.w / 2, btn.y + btn.h / 2 - 8)
-        ctx.font = '12px sans-serif'
-        ctx.fillText(btn.text, btn.x + btn.w / 2, btn.y + btn.h / 2 + 10)
+        // ⭐ 道具图标更大
+        ctx.font = isTool ? '22px sans-serif' : '18px sans-serif'
+        ctx.fillText(btn.icon, btn.x + btn.w / 2, y + h / 2 - 10)
+  
+        ctx.font = isTool ? '14px sans-serif' : '12px sans-serif'
+        ctx.fillText(btn.text, btn.x + btn.w / 2, y + h / 2 + 12)
       } else {
-        ctx.font = '16px sans-serif'
-        ctx.fillText(btn.text, btn.x + btn.w / 2, btn.y + btn.h / 2)
+        ctx.font = '20px sans-serif'
+        ctx.fillText(btn.text, btn.x + btn.w / 2, y + h / 2)
       }
     })
-  }
+  }  
 
   hitTestButton(x, y) {
     return this.buttons.find(
