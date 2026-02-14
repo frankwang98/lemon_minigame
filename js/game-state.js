@@ -240,6 +240,7 @@ export class GameState {
     if (!matches.length) {
       // 失败交换 → 回弹动画
       audioSystem.fail()
+      this.movesLeft--
       this.swapCells(a, b) // 逻辑上立即换回
       this.animations.push({
         type: 'swapFail',
@@ -285,6 +286,7 @@ export class GameState {
         return
       }
     }
+    audioSystem.gameOver()
   }
 
   useBombAt(cell, now) {
