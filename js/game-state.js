@@ -28,6 +28,12 @@ export class GameState {
       bomb: GAME_CONFIG.initialTools,
       swap: GAME_CONFIG.initialTools
     }
+
+    // ⭐ 拖动相关状态（给 renderer 用）
+    this.draggingCell = null      // 当前被拖动的格子
+    this.dragOffsetX = 0          // 拖动偏移 X
+    this.dragOffsetY = 0          // 拖动偏移 Y
+    this.dragDirection = null     // 'left' | 'right' | 'up' | 'down'
   }
 
   randomLemon() {
@@ -63,6 +69,20 @@ export class GameState {
       }
       this.board.push(row)
     }
+  }
+
+  getNeighbor(cell, dir) {
+    const { row, col } = cell
+    if (dir === 'left') return this.getCell(row, col - 1)
+    if (dir === 'right') return this.getCell(row, col + 1)
+    if (dir === 'up') return this.getCell(row - 1, col)
+    if (dir === 'down') return this.getCell(row + 1, col)
+    return null
+  }
+
+  getCell(row, col) {
+    if (!this.inBounds(col, row)) return null
+    return { row, col }
   }
 
   causesImmediateMatch(c, r, row, board) {
@@ -182,7 +202,6 @@ export class GameState {
       cells: matches
     })
 
-    
     return true
   }
 
@@ -201,18 +220,36 @@ export class GameState {
   }
 
   trySwapAndResolve(a, b, now) {
-    if (!this.isAdjacent(a, b)) return false
+    // 非相邻 → 抖动提示
+    if (!this.isAdjacent(a, b)) {
+      this.animations.push({
+        type: 'shake',
+        startTime: now,
+        duration: 150,
+        cell: a
+      })
+      return false
+    }
 
     this.swapCells(a, b)
     const matches = this.findMatches()
 
     if (!matches.length) {
-      this.swapCells(a, b)
+      // 失败交换 → 回弹动画
+      this.swapCells(a, b) // 逻辑上立即换回
+      this.animations.push({
+        type: 'swapFail',
+        startTime: now,
+        duration: 150,
+        from: a,
+        to: b
+      })
       return false
     }
 
     this.movesLeft--
 
+    // 成功交换动画
     this.animations.push({
       type: 'swap',
       startTime: now,
@@ -257,7 +294,7 @@ export class GameState {
       startTime: now,
       duration: 200,
       cells
-    })  
+    })
   }
 
   shuffleBoard() {
@@ -283,7 +320,6 @@ export class GameState {
     }
   }
 
-  // ⭐⭐⭐ 分享获得道具（B 真分享）
   requestToolByShare(tool) {
     wx.shareAppMessage({
       title: '柠檬大消除',
@@ -292,9 +328,5 @@ export class GameState {
         this.tools[tool]++
       }
     })
-
-    /* ⭐⭐⭐ A 假分享（注释保留）
-    this.tools[tool]++
-    */
   }
 }

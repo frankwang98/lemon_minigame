@@ -9,11 +9,20 @@ export class InputManager {
     this.onUseTool = onUseTool
 
     this.currentTool = null // 'swap' | 'bomb' | 'shuffle'
+
+    // 拖动相关
+    this.dragging = false
+    this.startCell = null
+    this.startX = 0
+    this.startY = 0
+
     this.bindEvents()
   }
 
   bindEvents() {
     wx.onTouchStart(this.handleTouchStart.bind(this))
+    wx.onTouchMove(this.handleTouchMove.bind(this))
+    wx.onTouchEnd(this.handleTouchEnd.bind(this))
   }
 
   handleTouchStart(e) {
@@ -28,20 +37,19 @@ export class InputManager {
       return
     }
 
+    // 静音按钮
     if (this.hitSoundButton(x, y)) {
-      // globalThis.audio.toggleSfx()
       globalThis.audio.toggleMusic()
       return
-    }    
+    }
 
     // 未开始游戏不能操作棋盘
     if (this.state.gamePhase !== 'playing') return
 
-    // 棋盘点击
     const cell = this.renderer.pointToCell(x, y)
     if (!cell) return
 
-    // 使用爆破道具
+    // 道具：爆破
     if (this.currentTool === 'bomb') {
       if (this.state.tools.bomb > 0) {
         this.state.tools.bomb--
@@ -54,7 +62,7 @@ export class InputManager {
       return
     }
 
-    // 使用换位道具
+    // 道具：换位（点击两次）
     if (this.currentTool === 'swap') {
       if (!this.state.selectedCell) {
         this.state.selectedCell = cell
@@ -74,23 +82,65 @@ export class InputManager {
       }
     }
 
-    // 普通点击（正常三消）
-    const prev = this.state.selectedCell
-    const now = Date.now()
+    // 普通三消：开始拖动
+    this.dragging = true
+    this.startCell = cell
+    this.startX = x
+    this.startY = y
 
-    if (!prev) {
-      this.state.selectedCell = cell
-      this.onStateChanged()
+    this.state.draggingCell = cell
+    this.state.dragOffsetX = 0
+    this.state.dragOffsetY = 0
+    this.state.dragDirection = null
+  }
+
+  handleTouchMove(e) {
+    if (!this.dragging || !this.startCell) return
+
+    const touch = e.touches[0]
+    const x = touch.clientX
+    const y = touch.clientY
+
+    const dx = x - this.startX
+    const dy = y - this.startY
+
+    this.state.dragOffsetX = dx
+    this.state.dragOffsetY = dy
+
+    const threshold = 20
+    if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return
+
+    let dir = null
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dir = dx > 0 ? 'right' : 'left'
     } else {
-      if (prev.col === cell.col && prev.row === cell.row) {
-        this.state.selectedCell = null
-        this.onStateChanged()
-      } else {
-        const success = this.state.trySwapAndResolve(prev, cell, now)
-        this.state.selectedCell = null
-        this.onStateChanged(success)
-      }
+      dir = dy > 0 ? 'down' : 'up'
     }
+    this.state.dragDirection = dir
+
+    const target = this.state.getNeighbor(this.startCell, dir)
+    if (!target) return
+
+    const now = Date.now()
+    const success = this.state.trySwapAndResolve(this.startCell, target, now)
+
+    this.dragging = false
+    this.startCell = null
+    this.state.draggingCell = null
+    this.state.dragOffsetX = 0
+    this.state.dragOffsetY = 0
+    this.state.dragDirection = null
+
+    this.onStateChanged(success)
+  }
+
+  handleTouchEnd() {
+    this.dragging = false
+    this.startCell = null
+    this.state.draggingCell = null
+    this.state.dragOffsetX = 0
+    this.state.dragOffsetY = 0
+    this.state.dragDirection = null
   }
 
   hitSoundButton(x, y) {
@@ -98,21 +148,18 @@ export class InputManager {
     const by = 100
     const bw = 40
     const bh = 40
-  
+
     return x >= bx && x <= bx + bw &&
            y >= by && y <= by + bh
   }
-  
 
   handleButton(id) {
-    // ⭐ 开始游戏
     if (id === 'startGame') {
       this.state.gamePhase = 'playing'
       this.onStateChanged()
       return
     }
 
-    // ⭐ 下一关
     if (id === 'nextLevel') {
       const next = Math.min(this.state.levelIndex + 1, 9)
       this.state.loadLevel(next)
@@ -121,52 +168,48 @@ export class InputManager {
       return
     }
 
-    // ⭐ 重试
     if (id === 'restart') {
       this.state.loadLevel(this.state.levelIndex)
       this.onStateChanged()
       return
     }
 
-    // ⭐ 分享获得道具
     if (id === 'shareTool') {
-      this.state.requestToolByShare('shuffle') // 默认给刷新
+      this.state.requestToolByShare('shuffle')
       this.onStateChanged()
       return
     }
 
-    // ⭐ 道具：刷新（立即执行 → 立即扣）
-if (id === 'tool_shuffle') {
-  if (this.state.tools.shuffle > 0) {
-    this.state.tools.shuffle--
-    this.onUseTool('shuffle')
-  } else {
-    this.state.requestToolByShare('shuffle')
-  }
-  this.onStateChanged()
-  return
-}
+    // 刷新
+    if (id === 'tool_shuffle') {
+      if (this.state.tools.shuffle > 0) {
+        this.state.tools.shuffle--
+        this.onUseTool('shuffle')
+      } else {
+        this.state.requestToolByShare('shuffle')
+      }
+      this.onStateChanged()
+      return
+    }
 
-// ⭐ 道具：爆破（进入模式，不扣次数）
-if (id === 'tool_bomb') {
-  if (this.state.tools.bomb > 0) {
-    this.currentTool = 'bomb'
-  } else {
-    this.state.requestToolByShare('bomb')
-  }
-  return
-}
+    // 爆破
+    if (id === 'tool_bomb') {
+      if (this.state.tools.bomb > 0) {
+        this.currentTool = 'bomb'
+      } else {
+        this.state.requestToolByShare('bomb')
+      }
+      return
+    }
 
-// ⭐ 道具：换位（进入模式，不扣次数）
-if (id === 'tool_swap') {
-  if (this.state.tools.swap > 0) {
-    this.currentTool = 'swap'
-  } else {
-    this.state.requestToolByShare('swap')
-  }
-  return
-}
-
-
+    // 换位
+    if (id === 'tool_swap') {
+      if (this.state.tools.swap > 0) {
+        this.currentTool = 'swap'
+      } else {
+        this.state.requestToolByShare('swap')
+      }
+      return
+    }
   }
 }

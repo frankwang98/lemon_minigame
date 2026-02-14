@@ -31,10 +31,9 @@ export class Renderer {
       "放轻松，享受消除的快乐！😄",
       "加油，下一关等你来征服！🚀"
     ]
-    
+
     this.currentMotivationIndex = 0
     this.lastMotivationSwitch = Date.now()
-    
   }
 
   loadImages() {
@@ -77,7 +76,6 @@ export class Renderer {
     ctx.fillText('🍋 ' + GAME_CONFIG.title + ' 🍋', centerX, y)
     y += 45
 
-
     ctx.font = '20px sans-serif'
     ctx.fillText(`🕒 时间：${this.state.timeLeft}s     🌀 步数：${this.state.movesLeft}`, centerX, y)
     y += 28
@@ -93,35 +91,33 @@ export class Renderer {
     const ctx = this.ctx
     const centerX = this.width / 2
     const y = GAME_CONFIG.gridTopOffset + this.gridHeight + 20
-  
+
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
     ctx.font = 'bold 22px sans-serif'
     ctx.fillStyle = '#3A2500'
     ctx.fillText(`第 ${this.state.levelIndex + 1} 关`, centerX, y)
   }
-  
+
   drawMotivation(now) {
-    // 每 5 秒切换一句
     if (now - this.lastMotivationSwitch > 5000) {
       this.currentMotivationIndex =
         (this.currentMotivationIndex + 1) % this.motivationTexts.length
       this.lastMotivationSwitch = now
     }
-  
+
     const text = this.motivationTexts[this.currentMotivationIndex]
-  
+
     const ctx = this.ctx
     const centerX = this.width / 2
     const y = GAME_CONFIG.gridTopOffset + this.gridHeight + 60
-  
+
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
     ctx.font = '18px sans-serif'
     ctx.fillStyle = '#5A3A00'
     ctx.fillText(text, centerX, y)
   }
-  
 
   drawGridBackground() {
     const ctx = this.ctx
@@ -145,6 +141,11 @@ export class Renderer {
     ctx.fill()
   }
 
+  // 简单缓动函数
+  easeOutQuad(t) {
+    return 1 - (1 - t) * (1 - t)
+  }
+
   drawLemons(now) {
     if (!this.imagesLoaded) return
     const ctx = this.ctx
@@ -166,14 +167,61 @@ export class Renderer {
         let scale = 1
         let alpha = 1
 
+        // 拖动跟随
+        if (this.state.draggingCell &&
+            this.state.draggingCell.col === c &&
+            this.state.draggingCell.row === r) {
+          cx += this.state.dragOffsetX
+          cy += this.state.dragOffsetY
+        }
+
+        // 动画处理
         this.state.animations.forEach(anim => {
           const t = (now - anim.startTime) / anim.duration
           if (t < 0 || t > 1) return
+
+          const tt = this.easeOutQuad(t)
+
           if (anim.type === 'eliminate') {
             if (anim.cells.some(p => p.col === c && p.row === r)) {
               scale = 1 - 0.7 * t
               alpha = 1 - t
             }
+          }
+
+          if (anim.type === 'swap') {
+            if (anim.from.col === c && anim.from.row === r) {
+              cx += (anim.to.col - anim.from.col) * this.cellSize * tt
+              cy += (anim.to.row - anim.from.row) * this.cellSize * tt
+            }
+            if (anim.to.col === c && anim.to.row === r) {
+              cx += (anim.from.col - anim.to.col) * this.cellSize * tt
+              cy += (anim.from.row - anim.to.row) * this.cellSize * tt
+            }
+          }
+
+          if (anim.type === 'swapFail') {
+            if (anim.from.col === c && anim.from.row === r) {
+              const dirX = (anim.to.col - anim.from.col) * this.cellSize
+              const dirY = (anim.to.row - anim.from.row) * this.cellSize
+              const offset = (tt < 0.5 ? tt : 1 - tt) * 2 // 去再回
+              cx += dirX * offset
+              cy += dirY * offset
+            }
+            if (anim.to.col === c && anim.to.row === r) {
+              const dirX = (anim.from.col - anim.to.col) * this.cellSize
+              const dirY = (anim.from.row - anim.to.row) * this.cellSize
+              const offset = (tt < 0.5 ? tt : 1 - tt) * 2
+              cx += dirX * offset
+              cy += dirY * offset
+            }
+          }
+
+          if (anim.type === 'shake' &&
+              anim.cell.col === c &&
+              anim.cell.row === r) {
+            const shake = Math.sin(t * Math.PI * 4) * 5
+            cx += shake
           }
         })
 
@@ -203,6 +251,32 @@ export class Renderer {
     ctx.strokeStyle = '#FFCA28'
     ctx.lineWidth = 3
     ctx.strokeRect(x + 2, y + 2, this.cellSize - 4, this.cellSize - 4)
+  }
+
+  drawDragArrow() {
+    if (!this.state.draggingCell || !this.state.dragDirection) return
+
+    const ctx = this.ctx
+    const { col, row } = this.state.draggingCell
+    const x = GAME_CONFIG.padding + col * this.cellSize + this.cellSize / 2
+    const y = GAME_CONFIG.gridTopOffset + row * this.cellSize + this.cellSize / 2
+
+    ctx.save()
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.font = '26px sans-serif'
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'
+
+    const map = {
+      left: '⬅️',
+      right: '➡️',
+      up: '⬆️',
+      down: '⬇️'
+    }
+
+    const icon = map[this.state.dragDirection]
+    if (icon) ctx.fillText(icon, x, y)
+    ctx.restore()
   }
 
   drawPhaseOverlay() {
@@ -249,6 +323,7 @@ export class Renderer {
     this.drawSelection()
     this.drawLevelInfo()
     this.drawMotivation(now)
+    this.drawDragArrow()
     this.drawPhaseOverlay()
     this.drawStartOverlay()
   }
