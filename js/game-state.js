@@ -286,7 +286,6 @@ export class GameState {
         return
       }
     }
-    audioSystem.gameOver()
   }
 
   useBombAt(cell, now) {
