@@ -4,6 +4,7 @@ import { Renderer } from './renderer.js'
 import { UIManager } from './ui.js'
 import { InputManager } from './input.js'
 import { AudioManager } from './audio.js'
+import { AudioSystem } from './audio-system.js'
 
 const { windowWidth, windowHeight, pixelRatio } = wx.getSystemInfoSync()
 
@@ -88,6 +89,9 @@ renderFrame()
 const audio = new AudioManager()
 audio.init()
 audio.playBGM()
-
 // 挂到全局，game-state.js 可以访问
 globalThis.audio = audio
+
+// audio system
+const audioSystem = new AudioSystem()
+globalThis.audioSystem = audioSystem

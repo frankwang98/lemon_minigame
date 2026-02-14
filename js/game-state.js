@@ -181,6 +181,7 @@ export class GameState {
       for (let r = this.rows - 1; r >= 0; r--) {
         if (this.board[r][c] !== null) {
           this.board[writeRow][c] = this.board[r][c]
+          audioSystem.drop()
           if (writeRow !== r) this.board[r][c] = null
           writeRow--
         }
@@ -210,9 +211,11 @@ export class GameState {
     if (!matches.length) return
 
     if (matches.length >= 5) {
-      audio.playCombo()   // ⭐ 连击音效
+      // audio.playCombo()   // ⭐ 连击音效
+      audioSystem.pop()
     } else {
-      audio.playNormal()  // ⭐ 普通消除音效
+      // audio.playNormal()  // ⭐ 普通消除音效
+      audioSystem.ding()
     }
 
     this.removeMatches(matches)
@@ -236,6 +239,7 @@ export class GameState {
 
     if (!matches.length) {
       // 失败交换 → 回弹动画
+      audioSystem.fail()
       this.swapCells(a, b) // 逻辑上立即换回
       this.animations.push({
         type: 'swapFail',
@@ -263,11 +267,13 @@ export class GameState {
 
   checkLevelStatus() {
     if (this.timeLeft <= 0 || this.movesLeft <= 0) {
+      audioSystem.gameOver()
       this.gamePhase = 'gameOver'
       return
     }
 
     if (this.target.score && this.score >= this.target.score) {
+      audioSystem.victory()
       this.gamePhase = 'levelClear'
       return
     }

@@ -33,6 +33,7 @@ export class InputManager {
     // 按钮点击
     const btn = this.ui.hitTestButton(x, y)
     if (btn) {
+      audioSystem.click()
       this.handleButton(btn.id)
       return
     }
@@ -40,6 +41,7 @@ export class InputManager {
     // 静音按钮
     if (this.hitSoundButton(x, y)) {
       globalThis.audio.toggleMusic()
+      audioSystem.click()
       return
     }
 
@@ -92,6 +94,8 @@ export class InputManager {
     this.state.dragOffsetX = 0
     this.state.dragOffsetY = 0
     this.state.dragDirection = null
+
+    audioSystem.click()
   }
 
   handleTouchMove(e) {
@@ -182,6 +186,7 @@ export class InputManager {
 
     // 刷新
     if (id === 'tool_shuffle') {
+      audioSystem.tool()
       if (this.state.tools.shuffle > 0) {
         this.state.tools.shuffle--
         this.onUseTool('shuffle')
@@ -194,6 +199,7 @@ export class InputManager {
 
     // 爆破
     if (id === 'tool_bomb') {
+      audioSystem.tool()
       if (this.state.tools.bomb > 0) {
         this.currentTool = 'bomb'
       } else {
@@ -204,6 +210,7 @@ export class InputManager {
 
     // 换位
     if (id === 'tool_swap') {
+      audioSystem.tool()
       if (this.state.tools.swap > 0) {
         this.currentTool = 'swap'
       } else {
