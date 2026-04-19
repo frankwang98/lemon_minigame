@@ -11,10 +11,9 @@ export const GAME_CONFIG = {
   padding: 16,
   gridTopOffset: 230,
 
-  lemonTypes: 4,
+  lemonTypes: 3,
   lemonImagePaths: [
     'images/lemon1.png',
-    'images/lemon2.png',
     'images/lemon3.png',
     'images/lemon4.png'
   ],
