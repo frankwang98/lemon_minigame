@@ -18,6 +18,10 @@ export class InputManager {
     this.startX = 0
     this.startY = 0
 
+    // 调试后门
+    this.quickClickCount = 0
+    this.lastQuickClick = 0
+
     this.bindEvents()
   }
 
@@ -42,6 +46,22 @@ export class InputManager {
 
     // 静音按钮
     if (this.hitSoundButton(x, y)) {
+      // 调试后门：500ms 内快速点击 3 次跳到下一关
+      if (!this.quickClickCount) this.quickClickCount = 0
+      if (Date.now() - this.lastQuickClick < 500) {
+        this.quickClickCount++
+      } else {
+        this.quickClickCount = 0
+      }
+      this.lastQuickClick = Date.now()
+      if (this.quickClickCount >= 2) {
+        const next = Math.min(this.state.levelIndex + 1, LEVELS.length - 1)
+        this.state.loadLevel(next)
+        this.state.gamePhase = 'playing'
+        this.quickClickCount = 0
+        return
+      }
+      // 正常切换音乐
       globalThis.audio.toggleMusic()
       audioSystem.click()
       return

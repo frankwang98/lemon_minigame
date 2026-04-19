@@ -39,6 +39,9 @@ function renderFrame() {
         gameState.gamePhase = 'gameOver'
       }
     }
+  } else {
+    // 非游戏进行中时，重置 tick 避免时间跳跃
+    lastTick = now
   }
 
   if (gameState.animations.length) {

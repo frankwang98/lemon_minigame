@@ -12,6 +12,7 @@ export class GameState {
     this.totalScore = 0
     this.totalTimeUsed = 0  // 总闯关时间（秒）
     this.levelStartTime = 0  // 当前关开始时间
+    this.levelTimeUsed = 0  // 本关用时（秒）- 关卡完成时锁定
     this.movesLeft = 0
     this.timeLeft = 0
 
@@ -52,6 +53,7 @@ export class GameState {
     this.target = level.target
     this.collected = [0, 0, 0, 0]
     this.levelStartTime = Date.now()  // 记录关卡开始时间
+    this.levelTimeUsed = 0  // 重置用时
 
     this.selectedCell = null
     this.initBoard()
@@ -282,7 +284,9 @@ export class GameState {
       return
     }
 
-    if (this.target && this.score >= this.target) {
+    if (this.target.score && this.score >= this.target.score) {
+      // 锁定用时
+      this.levelTimeUsed = this.getLevelTimeUsed()
       const isLastLevel = this.levelIndex >= LEVELS.length - 1
       if (isLastLevel) {
         audioSystem.victory()
@@ -297,6 +301,8 @@ export class GameState {
     if (this.target.collect) {
       const t = this.target.collect
       if (this.collected[t.type] >= t.count) {
+        // 锁定用时
+        this.levelTimeUsed = this.getLevelTimeUsed()
         const isLastLevel = this.levelIndex >= LEVELS.length - 1
         if (isLastLevel) {
           audioSystem.victory()
@@ -361,6 +367,8 @@ export class GameState {
 
   // 获取本关用时（秒）
   getLevelTimeUsed() {
+    // 如果已锁定用时，返回锁定值；否则实时计算
+    if (this.levelTimeUsed > 0) return this.levelTimeUsed
     if (this.levelStartTime === 0) return 0
     return Math.floor((Date.now() - this.levelStartTime) / 1000)
   }
