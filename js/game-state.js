@@ -10,6 +10,8 @@ export class GameState {
     this.levelIndex = 0
     this.score = 0
     this.totalScore = 0
+    this.totalTimeUsed = 0  // 总闯关时间（秒）
+    this.levelStartTime = 0  // 当前关开始时间
     this.movesLeft = 0
     this.timeLeft = 0
 
@@ -20,7 +22,7 @@ export class GameState {
     this.selectedCell = null
     this.animations = []
 
-    this.gamePhase = 'ready' // ready / playing / levelClear / gameOver
+    this.gamePhase = 'ready' // ready / playing / levelClear / gameOver / gameComplete
 
     // 道具
     this.tools = {
@@ -49,6 +51,7 @@ export class GameState {
     this.timeLeft = level.time
     this.target = level.target
     this.collected = [0, 0, 0, 0]
+    this.levelStartTime = Date.now()  // 记录关卡开始时间
 
     this.selectedCell = null
     this.initBoard()
@@ -280,15 +283,28 @@ export class GameState {
     }
 
     if (this.target && this.score >= this.target) {
-      audioSystem.victory()
-      this.gamePhase = 'levelClear'
+      const isLastLevel = this.levelIndex >= LEVELS.length - 1
+      if (isLastLevel) {
+        audioSystem.victory()
+        this.gamePhase = 'gameComplete'
+      } else {
+        audioSystem.victory()
+        this.gamePhase = 'levelClear'
+      }
       return
     }
 
     if (this.target.collect) {
       const t = this.target.collect
       if (this.collected[t.type] >= t.count) {
-        this.gamePhase = 'levelClear'
+        const isLastLevel = this.levelIndex >= LEVELS.length - 1
+        if (isLastLevel) {
+          audioSystem.victory()
+          this.gamePhase = 'gameComplete'
+        } else {
+          audioSystem.victory()
+          this.gamePhase = 'levelClear'
+        }
         return
       }
     }
@@ -341,5 +357,11 @@ export class GameState {
         this.tools[tool]++
       }
     })
+  }
+
+  // 获取本关用时（秒）
+  getLevelTimeUsed() {
+    if (this.levelStartTime === 0) return 0
+    return Math.floor((Date.now() - this.levelStartTime) / 1000)
   }
 }

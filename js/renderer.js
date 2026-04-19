@@ -281,7 +281,8 @@ export class Renderer {
 
   drawPhaseOverlay() {
     const ctx = this.ctx
-    if (this.state.gamePhase === 'levelClear' || this.state.gamePhase === 'gameOver') {
+    const phase = this.state.gamePhase
+    if (phase === 'levelClear' || phase === 'gameOver' || phase === 'gameComplete') {
       ctx.fillStyle = 'rgba(0,0,0,0.35)'
       ctx.fillRect(0, 0, this.width, this.height)
 
@@ -290,14 +291,24 @@ export class Renderer {
       ctx.textBaseline = 'middle'
       ctx.font = '26px sans-serif'
 
-      if (this.state.gamePhase === 'levelClear') {
-        ctx.fillText('🎉 关卡完成！', this.width / 2, this.height / 2 - 20)
+      if (phase === 'levelClear') {
+        ctx.fillText('🎉 关卡完成！', this.width / 2, this.height / 2 - 40)
+        ctx.font = '16px sans-serif'
+        ctx.fillText('使用下方按钮继续', this.width / 2, this.height / 2)
+      } else if (phase === 'gameComplete') {
+        // 通关显示
+        const timeUsed = this.state.getLevelTimeUsed()
+        ctx.fillText('🎉 恭喜通关！', this.width / 2, this.height / 2 - 50)
+        ctx.font = '18px sans-serif'
+        ctx.fillText(`总用时：${timeUsed} 秒`, this.width / 2, this.height / 2 - 10)
+        ctx.font = '14px sans-serif'
+        ctx.fillStyle = '#FFEE99'
+        ctx.fillText('去 做更重要的事吧 💪', this.width / 2, this.height / 2 + 25)
       } else {
         ctx.fillText('💔 挑战失败', this.width / 2, this.height / 2 - 20)
+        ctx.font = '16px sans-serif'
+        ctx.fillText('使用下方按钮继续', this.width / 2, this.height / 2 + 12)
       }
-
-      ctx.font = '16px sans-serif'
-      ctx.fillText('使用下方按钮继续', this.width / 2, this.height / 2 + 12)
     }
   }
 

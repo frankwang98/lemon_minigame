@@ -81,6 +81,15 @@ export class UIManager {
       return
     }
 
+    if (this.state.gamePhase === 'gameComplete') {
+      const y = this.height - 120
+      const w = fullWidth
+      const x = margin
+
+      this.buttons.push({ id: 'restart', x, y, w, h, text: '再玩一次' })
+      return
+    }
+
     if (this.state.gamePhase === 'gameOver') {
       const y = this.height - 120
       const w = (fullWidth - margin) / 2

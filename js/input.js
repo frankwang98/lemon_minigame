@@ -1,4 +1,6 @@
 // src/input.js
+import { LEVELS } from './levels.js'
+
 export class InputManager {
   constructor(canvas, renderer, uiManager, gameState, onStateChanged, onUseTool) {
     this.canvas = canvas
@@ -165,7 +167,7 @@ export class InputManager {
     }
 
     if (id === 'nextLevel') {
-      const next = Math.min(this.state.levelIndex + 1, 9)
+      const next = Math.min(this.state.levelIndex + 1, LEVELS.length - 1)
       this.state.loadLevel(next)
       this.state.gamePhase = 'playing'
       this.onStateChanged()
@@ -173,7 +175,12 @@ export class InputManager {
     }
 
     if (id === 'restart') {
-      this.state.loadLevel(this.state.levelIndex)
+      // 通关后点重启则重新开始第 1 关
+      if (this.state.gamePhase === 'gameComplete') {
+        this.state.loadLevel(0)
+      } else {
+        this.state.loadLevel(this.state.levelIndex)
+      }
       this.onStateChanged()
       return
     }
