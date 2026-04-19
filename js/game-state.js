@@ -176,12 +176,15 @@ export class GameState {
   }
 
   applyGravity() {
+    let hasDropped = false
     for (let c = 0; c < this.cols; c++) {
       let writeRow = this.rows - 1
       for (let r = this.rows - 1; r >= 0; r--) {
         if (this.board[r][c] !== null) {
+          if (writeRow !== r) {
+            hasDropped = true
+          }
           this.board[writeRow][c] = this.board[r][c]
-          audioSystem.drop()
           if (writeRow !== r) this.board[r][c] = null
           writeRow--
         }
@@ -189,6 +192,9 @@ export class GameState {
       for (let r = writeRow; r >= 0; r--) {
         this.board[r][c] = this.randomLemon()
       }
+    }
+    if (hasDropped) {
+      audioSystem.drop()
     }
   }
 
@@ -273,7 +279,7 @@ export class GameState {
       return
     }
 
-    if (this.target.score && this.score >= this.target.score) {
+    if (this.target && this.score >= this.target) {
       audioSystem.victory()
       this.gamePhase = 'levelClear'
       return
