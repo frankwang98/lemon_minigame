@@ -1,113 +1,111 @@
-import EventHub from './event.js'
-import { drawButton } from './common/ui.js'
+// src/main.js
+import { GameState } from './game-state.js'
+import { Renderer } from './renderer.js'
+import { UIManager } from './ui.js'
+import { InputManager } from './input.js'
+import { AudioManager } from './audio.js'
+import { AudioSystem } from './audio-system.js'
 
-import Minesweeper from './minesweeper/index.js'
-import SnakeGame from './snake/index.js'
-import RunnerGame from './runner/index.js'
-import PlaneGame from './plane/index.js'
-import Game2048 from './game2048/index.js'
+const { windowWidth, windowHeight, pixelRatio } = wx.getSystemInfoSync()
 
-export default class Main {
-  constructor() {
-    this.canvas = wx.createCanvas()
-    this.ctx = this.canvas.getContext('2d')
+// 逻辑尺寸（用来算布局）
+const logicalWidth = windowWidth
+const logicalHeight = windowHeight
 
-    this.eventHub = new EventHub()
-    this.currentGame = null
+const canvas = wx.createCanvas()
+const ctx = canvas.getContext('2d')
 
-    this.buttons = []
-    this.setupButtons()
-    this.bindMenuEvents()
+// 物理尺寸（真实像素，用来变清晰）
+canvas.width = logicalWidth * pixelRatio
+canvas.height = logicalHeight * pixelRatio
 
-    this.loop = this.loop.bind(this)
-    this.loop()
-  }
+// 把坐标系缩放回“逻辑尺寸”
+ctx.scale(pixelRatio, pixelRatio)
 
-  setupButtons() {
-    const { width, height } = this.canvas
-    const btnW = width * 0.6
-    const btnH = 48
-    const startY = height * 0.35
-    const gap = 16
+const gameState = new GameState()
+const renderer = new Renderer(canvas, ctx, gameState, logicalWidth, logicalHeight)
+const uiManager = new UIManager(canvas, ctx, gameState, logicalWidth, logicalHeight)
 
-    const titles = ['扫雷', '贪吃蛇', '跑酷', '飞机大战', '2048']
+let lastTick = Date.now()
 
-    this.buttons = titles.map((t, i) => ({
-      title: t,
-      x: (width - btnW) / 2,
-      y: startY + i * (btnH + gap),
-      w: btnW,
-      h: btnH
-    }))
-  }
+function renderFrame() {
+  const now = Date.now()
 
-  bindMenuEvents() {
-    this.eventHub.handlers.touchstart = e => {
-      const { clientX, clientY } = e.touches[0]
-      for (let btn of this.buttons) {
-        if (
-          clientX >= btn.x &&
-          clientX <= btn.x + btn.w &&
-          clientY >= btn.y &&
-          clientY <= btn.y + btn.h
-        ) {
-          this.startGame(btn.title)
-          break
-        }
+  if (gameState.gamePhase === 'playing') {
+    if (now - lastTick >= 1000) {
+      gameState.timeLeft--
+      lastTick = now
+      if (gameState.timeLeft <= 0) {
+        gameState.gamePhase = 'gameOver'
       }
     }
+  } else {
+    // 非游戏进行中时，重置 tick 避免时间跳跃
+    lastTick = now
   }
 
-  startGame(title) {
-    let game = null
-
-    switch (title) {
-      case '扫雷': game = new Minesweeper(this.canvas, this.ctx, () => this.backToMenu()); break
-      case '贪吃蛇': game = new SnakeGame(this.canvas, this.ctx, () => this.backToMenu()); break
-      case '跑酷': game = new RunnerGame(this.canvas, this.ctx, () => this.backToMenu()); break
-      case '飞机大战': game = new PlaneGame(this.canvas, this.ctx, () => this.backToMenu()); break
-      case '2048': game = new Game2048(this.canvas, this.ctx, () => this.backToMenu()); break
-    }
-
-    this.currentGame = game
-    this.eventHub.bind(game)
-  }
-
-  backToMenu() {
-    this.currentGame = null
-    this.eventHub.unbind()
-    this.bindMenuEvents()
-  }
-
-  loop() {
-    this.update()
-    this.render()
-    requestAnimationFrame(this.loop)
-  }
-
-  update() {
-    if (this.currentGame?.update) this.currentGame.update()
-  }
-
-  render() {
-    const ctx = this.ctx
-    const { width, height } = this.canvas
-
-    ctx.fillStyle = '#FFF9D9'
-    ctx.fillRect(0, 0, width, height)
-
-    if (this.currentGame?.render) {
-      this.currentGame.render()
-      return
-    }
-
-    ctx.fillStyle = '#FFC94A'
-    ctx.font = '32px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText('柠檬小游戏盒', width / 2, height * 0.12)
-
-    this.buttons.forEach(btn => {
-      drawButton(ctx, btn.title, btn.x, btn.y, btn.w, btn.h)
+  if (gameState.animations.length) {
+    gameState.animations = gameState.animations.filter(anim => {
+      const t = now - anim.startTime
+      return t < anim.duration
     })
+
+    if (!gameState.animations.some(a => a.type === 'eliminate')) {
+      gameState.finalizeElimination()
+      gameState.checkLevelStatus()
+    }
   }
+
+  renderer.render(now)
+  uiManager.drawButtons()
+
+  requestAnimationFrame(renderFrame)
+}
+
+function onStateChanged() {}
+
+function onUseTool(tool, data) {
+  const now = Date.now()
+
+  if (tool === 'bomb') {
+    gameState.useBombAt(data, now)
+  }
+
+  if (tool === 'shuffle') {
+    gameState.shuffleBoard()
+  }
+
+  if (tool === 'swap') {
+    const { a, b } = data
+    gameState.swapCells(a, b)
+    gameState.movesLeft--
+  }
+}
+
+gameState.loadLevel(0)
+
+new InputManager(canvas, renderer, uiManager, gameState, onStateChanged, onUseTool)
+
+renderFrame()
+
+// audio
+const audio = new AudioManager()
+audio.init()
+
+// audio system - 合成音效 + BGM
+const audioSystem = new AudioSystem()
+globalThis.audioSystem = audioSystem
+
+// 点击静音按钮切换 BGM
+audioSystem.playBGM()  // 默认开启
+
+// audio 兼容接口
+let musicOn = true
+globalThis.audio = {
+  toggleMusic() {
+    audioSystem.toggleBGM()
+    musicOn = !musicOn
+    this.enabledMusic = musicOn
+  },
+  get enabledMusic() { return musicOn }
 }

@@ -14,8 +14,8 @@
   },
   "compileType": "game",
   "libVersion": "latest",
-  "appid": "wx97389c38a43b07b6",
-  "projectname": "quickstart",
+  "appid": "wxc196151ea2e36846",
+  "projectname": "lemon_minigame",
   "condition": {},
   "packOptions": {
     "ignore": [],
