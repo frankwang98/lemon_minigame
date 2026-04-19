@@ -3,6 +3,10 @@ export class AudioSystem {
     constructor() {
       this.ctx = wx.createWebAudioContext()
       this.enabled = true
+      this.bgmPlaying = false
+      this.bgmPaused = false
+      this.bgmOsc = []
+      this.bgmGain = null
 
       // 全局音量控制
       this.master = this.ctx.createGain()
@@ -12,6 +16,110 @@ export class AudioSystem {
 
     toggle() {
       this.enabled = !this.enabled
+      if (!this.enabled && this.bgmPlaying) {
+        this.stopBGM()
+      }
+    }
+
+    // 播放 BGM（欢快旋律）
+    playBGM() {
+      // 先停止之前的，避免多重声音
+      this.stopBGM()
+
+      // 先设置状态再播放
+      this.bgmPlaying = true
+      this.bgmPaused = false
+
+      const now = this.ctx.currentTime
+      this.bgmGain = this.ctx.createGain()
+      this.bgmGain.gain.value = 0.15
+      this.bgmGain.connect(this.master)
+
+      // C大调欢快旋律循环
+      const melody = [
+        { note: 523.25, dur: 0.25 },  // C5
+        { note: 587.33, dur: 0.25 },  // D5
+        { note: 659.25, dur: 0.5 },  // E5
+        { note: 523.25, dur: 0.25 },  // C5
+        { note: 659.25, dur: 0.25 },  // E5
+        { note: 783.99, dur: 0.5 },  // G5
+        { note: 659.25, dur: 0.25 },  // E5
+        { note: 587.33, dur: 0.25 },  // D5
+        { note: 523.25, dur: 0.5 },  // C5
+        { note: 0,     dur: 0.25 },  // 休止
+        { note: 783.99, dur: 0.25 },  // G5
+        { note: 880.00, dur: 0.25 },  // A5
+        { note: 783.99, dur: 0.5 },  // G5
+        { note: 659.25, dur: 0.25 },  // E5
+        { note: 587.33, dur: 0.25 },  // D5
+        { note: 523.25, dur: 0.75 },  // C5
+      ]
+
+      // 循环播放
+      const loopMelody = () => {
+        if (!this.bgmPlaying || this.bgmPaused) {
+          this.bgmPlaying = false
+          return
+        }
+
+        const startTime = this.ctx.currentTime
+        let t = startTime
+
+        melody.forEach(({ note, dur }) => {
+          if (note === 0) {
+            // 休止
+            t += dur
+            return
+          }
+
+          const osc = this.ctx.createOscillator()
+          const gain = this.ctx.createGain()
+          const env = this.ctx.createGain()
+
+          osc.type = 'triangle'
+          osc.frequency.setValueAtTime(note, t)
+
+          // 轻柔包络
+          gain.gain.setValueAtTime(0.0001, t)
+          gain.gain.linearRampToValueAtTime(0.6, t + 0.02)
+          gain.gain.linearRampToValueAtTime(0.4, t + dur * 0.3)
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+
+          osc.connect(gain)
+          gain.connect(this.bgmGain)
+
+          osc.start(t)
+          osc.stop(t + dur)
+
+          this.bgmOsc.push(osc)
+          t += dur
+        })
+
+        // 下一轮循环
+        setTimeout(loopMelody, melody.reduce((a, b) => a + b.dur, 0) * 1000)
+      }
+
+      this.bgmPlaying = true
+      loopMelody()
+    }
+
+    stopBGM() {
+      this.bgmPlaying = false
+      this.bgmPaused = true
+      // 立即停止所有振荡器
+      this.bgmOsc.forEach(osc => {
+        try { osc.stop() } catch(e) {}
+      })
+      this.bgmOsc = []
+    }
+
+    toggleBGM() {
+      if (this.bgmPlaying) {
+        this.stopBGM()
+      } else {
+        this.bgmPaused = false
+        this.playBGM()
+      }
     }
 
     // 带 Attack + Decay + 可选延迟

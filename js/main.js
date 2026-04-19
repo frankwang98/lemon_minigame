@@ -91,10 +91,21 @@ renderFrame()
 // audio
 const audio = new AudioManager()
 audio.init()
-audio.playBGM()
-// 挂到全局，game-state.js 可以访问
-globalThis.audio = audio
 
-// audio system
+// audio system - 合成音效 + BGM
 const audioSystem = new AudioSystem()
 globalThis.audioSystem = audioSystem
+
+// 点击静音按钮切换 BGM
+audioSystem.playBGM()  // 默认开启
+
+// audio 兼容接口
+let musicOn = true
+globalThis.audio = {
+  toggleMusic() {
+    audioSystem.toggleBGM()
+    musicOn = !musicOn
+    this.enabledMusic = musicOn
+  },
+  get enabledMusic() { return musicOn }
+}
