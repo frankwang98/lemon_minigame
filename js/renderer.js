@@ -292,9 +292,12 @@ export class Renderer {
       ctx.font = '26px sans-serif'
 
       if (phase === 'levelClear') {
-        ctx.fillText('🎉 关卡完成！', this.width / 2, this.height / 2 - 40)
-        ctx.font = '16px sans-serif'
-        ctx.fillText('使用下方按钮继续', this.width / 2, this.height / 2)
+        const timeUsed = this.state.getLevelTimeUsed()
+        ctx.fillText('🎉 关卡完成！', this.width / 2, this.height / 2 - 50)
+        ctx.font = '18px sans-serif'
+        ctx.fillText(`用时：${timeUsed} 秒`, this.width / 2, this.height / 2 - 10)
+        ctx.font = '14px sans-serif'
+        ctx.fillText('点击下方按钮继续', this.width / 2, this.height / 2 + 18)
       } else if (phase === 'gameComplete') {
         // 通关显示
         const timeUsed = this.state.getLevelTimeUsed()
