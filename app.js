@@ -7,14 +7,20 @@ const canvas=$('game'),ctx=canvas.getContext('2d')
 const width=390,height=700
 canvas.width=width*devicePixelRatio;canvas.height=height*devicePixelRatio
 ctx.scale(devicePixelRatio,devicePixelRatio)
-const audioStub={click(){},ding(){},pop(){},drop(){},fail(){},tool(){},victory(){},gameOver(){}}
-globalThis.audioSystem=audioStub
+let audioEnabled=true,audioContext=null;
+function unlockAudio(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;audioContext??=new C();if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});return audioContext}catch(e){return null}}
+function beep(freq=480,duration=.09,volume=.065){if(!audioEnabled)return;const ac=unlockAudio();if(!ac)return;try{const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+.02;o.type='sine';o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(volume,t);g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+duration+.02)}catch(e){}}
+globalThis.audioSystem={click:()=>beep(430,.06),ding:()=>beep(660,.12),pop:()=>beep(850,.14),drop:()=>beep(470,.07),fail:()=>beep(180,.17),tool:()=>beep(510,.11),victory:()=>{beep(700,.2);setTimeout(()=>beep(950,.24),130)},gameOver:()=>beep(160,.35)};
+function syncAudioButton(){const b=$('matchSound');b.textContent=audioEnabled?'🔊 音效：开':'🔇 音效：关';b.setAttribute('aria-pressed',String(audioEnabled))}
+$('matchSound').addEventListener('click',()=>{audioEnabled=!audioEnabled;syncAudioButton();if(audioEnabled)beep(660,.12)});
+canvas.addEventListener('pointerdown',unlockAudio,{passive:true});
+
 globalThis.wx={shareAppMessage(){alert('网页版本不支持微信分享领取道具')}}
 let scene='home',last=performance.now(),pointer=null,selectedTool=null,match=new GameState(),tower=new TowerDefense(width,height)
 const saved=Number(localStorage.getItem('lemon-match-level')||0)
 match.loadLevel(Math.min(Math.max(saved,0),LEVELS.length-1))
 function home(){scene='home';$('tiles').style.display='grid';$('gameArea').classList.remove('active');$('homeTop').hidden=true;$('intro').hidden=false}
-function start(type){if(type==='tower'){window.location.href='./tower-defense-3.html?v=20261022-audio2';return}scene=type;$('tiles').style.display='none';$('gameArea').classList.add('active');$('homeTop').hidden=false;$('intro').hidden=true;$('gameTitle').textContent=type==='match'?'🍋 柠檬大消除':'🏰 柠檬塔防';$('instructions').textContent=type==='match'?'拖动相邻柠檬交换；底部可使用道具':'选择底部防御塔，点击道路外空地建造；点已有塔升级或出售';last=performance.now()}
+function start(type){if(type==='tower'){window.location.href='./tower-defense-3.html';return}scene=type;$('tiles').style.display='none';$('gameArea').classList.add('active');$('homeTop').hidden=false;$('intro').hidden=true;$('gameTitle').textContent=type==='match'?'🍋 柠檬大消除':'🏰 柠檬塔防';$('instructions').textContent=type==='match'?'拖动相邻柠檬交换；底部可使用道具':'选择底部防御塔，点击道路外空地建造；点已有塔升级或出售';last=performance.now()}
 document.querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>start(b.dataset.game)))
 $('homeTop').addEventListener('click',home)
 $('restart').addEventListener('click',()=>{if(scene==='tower')tower.reset();else if(scene==='match'){match.loadLevel(match.levelIndex);match.gamePhase='playing'}})
