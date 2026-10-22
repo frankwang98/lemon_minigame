@@ -21,3 +21,6 @@ a{color:var(--accent)}button{font-family:inherit}button:focus-visible,a:focus-vi
 .game-bar.hall-audio button{flex:0 0 auto}
 .game.hall-game{margin-top:0}
 @media(max-width:550px){.hall-nav{min-height:64px;padding:10px 14px}.hall-heading{font-size:19px}.game-bar.hall-audio{justify-content:center}}
+
+/* Hidden controls must stay hidden even when styled as flex buttons. */
+[hidden]{display:none!important}
