@@ -1,7 +1,7 @@
-import {GameState} from '../js/game-state.js'
-import {TowerDefense} from '../js/tower-defense.js'
-import {GAME_CONFIG} from '../js/config.js'
-import {LEVELS} from '../js/levels.js'
+import {GameState} from './js/game-state.js'
+import {TowerDefense} from './js/tower-defense.js'
+import {GAME_CONFIG} from './js/config.js'
+import {LEVELS} from './js/levels.js'
 const $=id=>document.getElementById(id)
 const canvas=$('game'),ctx=canvas.getContext('2d')
 const width=390,height=700
