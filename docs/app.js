@@ -21,9 +21,21 @@ $('restart').addEventListener('click',()=>{if(scene==='tower')tower.reset();else
 const grid={x:16,y:175,size:(width-32)/7}
 function cell(x,y){const col=Math.floor((x-grid.x)/grid.size),row=Math.floor((y-grid.y)/grid.size);return col>=0&&col<7&&row>=0&&row<7?{col,row}:null}
 function coords(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*width/r.width,y:(e.clientY-r.top)*height/r.height}}
-canvas.addEventListener('pointerdown',e=>{if(scene==='home')return;canvas.setPointerCapture(e.pointerId);const p=coords(e);pointer=p;if(scene==='tower')tower.touch(p.x,p.y)})
+let swappedOnDrag=false
+canvas.addEventListener('pointerdown',e=>{if(scene==='home')return;canvas.setPointerCapture(e.pointerId);const p=coords(e);pointer=p;swappedOnDrag=false;if(scene==='tower')tower.touch(p.x,p.y)})
+canvas.addEventListener('pointermove',e=>{
+ if(scene!=='match'||!pointer||match.gamePhase!=='playing'||match.resolving||selectedTool)return
+ const p=coords(e),a=cell(pointer.x,pointer.y)
+ if(!a||swappedOnDrag)return
+ const dx=p.x-pointer.x,dy=p.y-pointer.y
+ if(Math.max(Math.abs(dx),Math.abs(dy))<grid.size*.25)return
+ const b={col:a.col+(Math.abs(dx)>Math.abs(dy)?Math.sign(dx):0),row:a.row+(Math.abs(dy)>=Math.abs(dx)?Math.sign(dy):0)}
+ if(b.col<0||b.col>=7||b.row<0||b.row>=7)return
+ match.trySwapAndResolve(a,b,Date.now());swappedOnDrag=true
+})
 canvas.addEventListener('pointerup',e=>{
  if(scene!=='match'||!pointer)return
+ if(swappedOnDrag){pointer=null;swappedOnDrag=false;return}
  const p=coords(e),a=cell(pointer.x,pointer.y),b=cell(p.x,p.y);pointer=null
  if(match.gamePhase==='ready'){match.gamePhase='playing';return}
  if(match.gamePhase==='levelClear'){match.loadLevel(match.levelIndex+1);match.gamePhase='playing';localStorage.setItem('lemon-match-level',match.levelIndex);return}
