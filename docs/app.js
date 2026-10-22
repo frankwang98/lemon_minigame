@@ -14,7 +14,7 @@ let scene='home',last=performance.now(),pointer=null,selectedTool=null,match=new
 const saved=Number(localStorage.getItem('lemon-match-level')||0)
 match.loadLevel(Math.min(Math.max(saved,0),LEVELS.length-1))
 function home(){scene='home';$('tiles').style.display='grid';$('gameArea').classList.remove('active');$('homeTop').hidden=true;$('intro').hidden=false}
-function start(type){scene=type;$('tiles').style.display='none';$('gameArea').classList.add('active');$('homeTop').hidden=false;$('intro').hidden=true;$('gameTitle').textContent=type==='match'?'🍋 柠檬大消除':'🏰 柠檬塔防';$('instructions').textContent=type==='match'?'拖动相邻柠檬交换；底部可使用道具':'选择底部防御塔，点击道路外空地建造；点已有塔升级或出售';last=performance.now()}
+function start(type){if(type==='tower'){window.location.href='./tower-defense-3.html';return}scene=type;$('tiles').style.display='none';$('gameArea').classList.add('active');$('homeTop').hidden=false;$('intro').hidden=true;$('gameTitle').textContent=type==='match'?'🍋 柠檬大消除':'🏰 柠檬塔防';$('instructions').textContent=type==='match'?'拖动相邻柠檬交换；底部可使用道具':'选择底部防御塔，点击道路外空地建造；点已有塔升级或出售';last=performance.now()}
 document.querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>start(b.dataset.game)))
 $('homeTop').addEventListener('click',home)
 $('restart').addEventListener('click',()=>{if(scene==='tower')tower.reset();else if(scene==='match'){match.loadLevel(match.levelIndex);match.gamePhase='playing'}})
