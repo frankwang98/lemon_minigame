@@ -33,7 +33,7 @@ function renderFrame() {
 
   if (gameState.gamePhase === 'playing') {
     if (now - lastTick >= 1000) {
-      gameState.timeLeft--
+      gameState.timeLeft = Math.max(0, gameState.timeLeft - Math.floor((now - lastTick) / 1000))
       lastTick = now
       if (gameState.timeLeft <= 0) {
         gameState.gamePhase = 'gameOver'
@@ -50,7 +50,7 @@ function renderFrame() {
       return t < anim.duration
     })
 
-    if (!gameState.animations.some(a => a.type === 'eliminate')) {
+    if (gameState.resolving && !gameState.animations.some(a => a.type === 'eliminate')) {
       gameState.finalizeElimination()
       gameState.checkLevelStatus()
     }
@@ -77,8 +77,7 @@ function onUseTool(tool, data) {
 
   if (tool === 'swap') {
     const { a, b } = data
-    gameState.swapCells(a, b)
-    gameState.movesLeft--
+    if (!gameState.resolving) gameState.swapCells(a, b)
   }
 }
 

@@ -1,34 +1,29 @@
-# 示例游戏
+# 柠檬大消除 · Lemon MiniGame
 
-示例相关说明查阅[新手教程](https://developers.weixin.qq.com/minigame/dev/guide/develop/start.html)
+微信原生 Canvas 三消小游戏，竖屏操作，支持关卡、倒计时、道具、音效与微信分享。
 
-## 源码目录介绍
+## 玩法
 
-```
-├── audio                                      // 音频资源
-├── images                                     // 图片资源
-├── js
-│   ├── base
-│   │   ├── animatoin.js                       // 帧动画的简易实现
-│   │   ├── pool.js                            // 对象池的简易实现
-│   │   └── sprite.js                          // 游戏基本元素精灵类
-│   ├── libs
-│   │   └── tinyemitter.js                     // 事件监听和触发
-│   ├── npc
-│   │   └── enemy.js                           // 敌机类
-│   ├── player
-│   │   ├── bullet.js                          // 子弹类
-│   │   └── index.js                           // 玩家类
-│   ├── runtime
-│   │   ├── background.js                      // 背景类
-│   │   ├── gameinfo.js                        // 用于展示分数和结算界面
-│   │   └── music.js                           // 全局音效管理器
-│   ├── databus.js                             // 管控游戏状态
-│   ├── main.js                                // 游戏入口主函数
-│   └── render.js                              // 基础渲染信息
-├── .eslintrc.js                               // 代码规范
-├── game.js                                    // 游戏逻辑主入口
-├── game.json                                  // 游戏运行时配置
-├── project.config.json                        // 项目配置
-└── project.private.config.json                // 项目个人配置
-```
+滑动相邻柠檬，形成横向或纵向三个及以上同类柠檬即可消除。达到目标分数过关；时间或步数耗尽则挑战失败。
+
+## 本次优化
+
+- 连续消除、棋盘可玩性检测和自动重排
+- 修复最后一步达标判负、无效交换扣步数和炸弹道具逻辑
+- 动画期间锁定操作，清除正式版隐藏跳关入口
+- 保持微信原生 Canvas，不引入额外引擎或后端
+
+## 运行
+
+使用微信开发者工具，选择「小游戏」项目，导入仓库根目录并使用自己的测试 AppID。运行前请检查开发者工具中的基础库兼容性。
+
+## 主要文件
+
+- `game.js`：小游戏入口及分享配置
+- `js/main.js`：Canvas 初始化和帧循环
+- `js/game-state.js`：棋盘、匹配、关卡状态
+- `js/input.js`：触摸与道具操作
+- `js/ui.js`：按钮界面
+- `js/levels.js`：关卡配置
+
+> 本分支仍需微信开发者工具真机测试，特别是多段连消、计时和道具操作。

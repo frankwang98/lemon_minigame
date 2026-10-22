@@ -46,6 +46,7 @@ export class InputManager {
 
     // 静音按钮
     if (this.hitSoundButton(x, y)) {
+      /* 调试跳关逻辑已移除
       // 调试后门：500ms 内快速点击 3 次跳到下一关
       if (!this.quickClickCount) this.quickClickCount = 0
       if (Date.now() - this.lastQuickClick < 500) {
@@ -61,11 +62,14 @@ export class InputManager {
         this.quickClickCount = 0
         return
       }
+      */
       // 正常切换音乐
       globalThis.audio.toggleMusic()
       audioSystem.click()
       return
     }
+
+    if (this.state.resolving) return
 
     // 未开始游戏不能操作棋盘
     if (this.state.gamePhase !== 'playing') return

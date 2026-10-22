@@ -22,6 +22,8 @@ export class GameState {
     this.board = []
     this.selectedCell = null
     this.animations = []
+    this.resolving = false
+    this.combo = 0
 
     this.gamePhase = 'ready' // ready / playing / levelClear / gameOver / gameComplete
 
@@ -56,6 +58,9 @@ export class GameState {
     this.levelTimeUsed = 0  // 重置用时
 
     this.selectedCell = null
+    this.animations = []
+    this.resolving = false
+    this.combo = 0
     this.initBoard()
 
     this.gamePhase = index === 0 ? 'ready' : 'playing'
@@ -74,6 +79,26 @@ export class GameState {
       }
       this.board.push(row)
     }
+    for (let attempts = 0; !this.hasValidMove() && attempts < 100; attempts++) {
+      this.initBoard()
+      return
+    }
+  }
+
+  hasValidMove() {
+    for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
+        const a = { row, col }
+        for (const b of [{ row, col: col + 1 }, { row: row + 1, col }]) {
+          if (!this.inBounds(b.col, b.row)) continue
+          this.swapCells(a, b)
+          const valid = this.findMatches().length > 0
+          this.swapCells(a, b)
+          if (valid) return true
+        }
+      }
+    }
+    return false
   }
 
   getNeighbor(cell, dir) {
@@ -207,6 +232,7 @@ export class GameState {
     const matches = this.findMatches()
     if (!matches.length) return false
 
+    this.resolving = true
     this.animations.push({
       type: 'eliminate',
       startTime: now,
@@ -231,10 +257,20 @@ export class GameState {
 
     this.removeMatches(matches)
     this.applyGravity()
+    const next = this.findMatches()
+    if (next.length) {
+      this.combo++
+      this.resolveBoardWithAnimation(Date.now())
+    } else {
+      this.combo = 0
+      this.resolving = false
+      if (!this.hasValidMove()) this.shuffleBoard()
+    }
   }
 
   trySwapAndResolve(a, b, now) {
     // 非相邻 → 抖动提示
+    if (this.resolving || this.gamePhase !== 'playing') return false
     if (!this.isAdjacent(a, b)) {
       this.animations.push({
         type: 'shake',
@@ -251,7 +287,6 @@ export class GameState {
     if (!matches.length) {
       // 失败交换 → 回弹动画
       audioSystem.fail()
-      this.movesLeft--
       this.swapCells(a, b) // 逻辑上立即换回
       this.animations.push({
         type: 'swapFail',
@@ -264,6 +299,7 @@ export class GameState {
     }
 
     this.movesLeft--
+    this.resolving = true
 
     // 成功交换动画
     this.animations.push({
@@ -278,7 +314,8 @@ export class GameState {
   }
 
   checkLevelStatus() {
-    if (this.timeLeft <= 0 || this.movesLeft <= 0) {
+    if (this.resolving) return
+    if (this.timeLeft <= 0) {
       audioSystem.gameOver()
       this.gamePhase = 'gameOver'
       return
@@ -314,6 +351,10 @@ export class GameState {
         return
       }
     }
+    if (this.movesLeft <= 0) {
+      audioSystem.gameOver()
+      this.gamePhase = 'gameOver'
+    }
   }
 
   useBombAt(cell, now) {
@@ -324,12 +365,14 @@ export class GameState {
       }
     }
 
-    this.animations.push({
-      type: 'eliminate',
-      startTime: now,
-      duration: 200,
-      cells
-    })
+    if (this.resolving || this.gamePhase !== 'playing') return
+    this.resolving = true
+    this.removeMatches(cells)
+    this.applyGravity()
+    this.resolving = false
+    if (this.findMatches().length) this.resolveBoardWithAnimation(now)
+    else if (!this.hasValidMove()) this.shuffleBoard()
+    this.checkLevelStatus()
   }
 
   shuffleBoard() {
@@ -352,6 +395,9 @@ export class GameState {
       for (let c = 0; c < this.cols; c++) {
         this.board[r][c] = flat[idx++]
       }
+    }
+    if (this.findMatches().length || !this.hasValidMove()) {
+      this.initBoard()
     }
   }
 
