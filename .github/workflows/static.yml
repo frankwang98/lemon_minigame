@@ -36,8 +36,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Publish the docs directory as the website root
-          path: './docs'
+          # Publish repository root as the website root
+          path: '.'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
