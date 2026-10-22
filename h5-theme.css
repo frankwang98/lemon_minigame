@@ -1,0 +1,14 @@
+/* H5 game hall shared visual system; WeChat native code remains independent. */
+:root{color-scheme:dark;--bg:#101e1a;--panel:#1b3029;--panel2:#294438;--line:#4b7760;--text:#f3f9f2;--muted:#a8c8b4;--accent:#a4e2b6;--action:#b65345}
+*{box-sizing:border-box}html{background:var(--bg)}body{background:radial-gradient(circle at 10% 0%,#254939 0,transparent 45%),var(--bg)!important;color:var(--text)!important;font-family:system-ui,-apple-system,"PingFang SC",sans-serif}
+a{color:var(--accent)}button{font-family:inherit}button:focus-visible,a:focus-visible{outline:3px solid #f2cf78;outline-offset:2px}
+.hall-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:960px;margin:0 auto;padding:16px 18px}
+.hall-brand{font-weight:850;letter-spacing:.01em;text-decoration:none;color:var(--text);font-size:clamp(18px,3vw,24px)}
+.hall-back,.hall-action{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text);padding:10px 14px;font-weight:700;text-decoration:none;cursor:pointer}
+.hall-back:active,.hall-action:active{transform:scale(.98)}
+.hall-pill{border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted);font-size:12px}
+.hall-game{background:var(--panel)!important;border:1px solid #365846;border-radius:20px;box-shadow:0 16px 55px #07170d55}
+.hall-audio{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hall-audio button{background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:8px 11px;min-height:38px;font-size:12px;font-weight:700}
+.hall-tip{color:var(--muted);font-size:12px}
+@media(max-width:550px){.hall-nav{padding:12px}.hall-pill{display:none}.hall-back,.hall-action{padding:9px 11px}}
