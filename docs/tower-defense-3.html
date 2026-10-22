@@ -3,12 +3,14 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#101d1b;color:#f0f5f1;font-family:system-ui,-apple-system,'Microsoft YaHei',sans-serif}.game{max-width:490px;margin:18px auto;padding:16px;background:#1a2a27;border-radius:18px;display:flex;flex-direction:column;gap:12px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.stat{background:#263c35;border-radius:10px;padding:8px 2px;text-align:center;font-size:11px;color:#adc4b9}.stat b{display:block;font-size:20px;color:#fff}canvas{display:block;width:100%;height:auto;border-radius:11px;touch-action:manipulation;background:#172b28}.tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}button{background:#31443d;color:white;border:1px solid #486256;border-radius:9px;padding:10px 5px;font-size:12px;font-weight:600;cursor:pointer}button.sel{outline:2px solid #e46c56}button.main{background:#aa3c37;border-color:#aa3c37;font-size:14px;flex:1}button:disabled{opacity:.4}.small{font-size:10px;font-weight:400;color:#b5c9bf}.controls{display:flex;gap:7px}.msg{text-align:center;background:#263c35;border-radius:9px;padding:10px;min-height:40px}.legend{font-size:11px;color:#b5c9bf;line-height:1.8}h1{font-size:20px;margin:0;text-align:center}
 a.back{display:block;max-width:490px;margin:12px auto 0;padding:0 16px;color:#b8e8d0;text-decoration:none;font-size:14px}a.back:hover{text-decoration:underline}
+.audio-panel{background:#263c35;border:1px solid #5c8e76;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:9px}.audio-label{font-size:14px;font-weight:800;color:#e7fff0}.audio-label small{font-size:10px;color:#9fe4b7;font-weight:400;margin-left:8px}.audio-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.audio-actions button{min-height:40px;background:#385b4c;border-color:#7ba58e;font-size:12px;padding:7px 2px}.audio-actions #xTest{background:#a43e37;border-color:#dc7264}@media(max-width:390px){.audio-actions button{font-size:11px}}
 </style></head><body><a class="back" href="./">← 返回柠檬小游戏大厅</a><main class="game" id="hellTD"><h1>塔防 3.0 · 地狱模式</h1><div style="text-align:center;font-size:12px;color:#8fe9b4">版本 2026.10.22 · 音乐 / 音效 / 关卡重试</div>
+<section class="audio-panel" aria-label="游戏声音设置"><span class="audio-label">🎵 游戏声音 <small>音频版 2026.10.22-b</small></span><div class="audio-actions"><button type="button" id="xMusic">♫ 音乐：开</button><button type="button" id="xSfx">🔊 音效：开</button><button type="button" id="xTest">♪ 点我试听</button></div></section>
 <div class="stats"><div class="stat">金币<b id="xGold">145</b></div><div class="stat">生命<b id="xLife">8</b></div><div class="stat">波次<b id="xWave">0/15</b></div><div class="stat">击杀<b id="xKills">0</b></div></div>
 <canvas id="xCanvas" width="400" height="400" aria-label="塔防地图"></canvas>
 <div class="tools"><button data-mode="gun" class="sel">🔵 速射塔<div class="small">65 金币</div></button><button data-mode="cannon">🟠 火炮塔<div class="small">125 金币</div></button><button data-mode="ice">❄️ 冰冻塔<div class="small">105 金币</div></button><button data-mode="laser">🟣 穿甲塔<div class="small">155 金币</div></button><button data-mode="upgrade">⬆️ 升级<div class="small">最多 3 级</div></button><button data-mode="sell">💰 出售<div class="small">返还 45%</div></button></div>
 <div class="controls"><button class="main" id="xStart">▶ 开始第 1 波</button><button id="xSpeed">×1 速度</button><button id="xRetry" hidden>↻ 重试本波</button><button id="xReset">↻ 重开</button></div>
-<div class="controls"><button id="xMusic">♫ 音乐：开</button><button id="xSfx">🔊 音效：开</button><button id="xTest">♪ 试听声音</button></div>
+
 <div id="xMsg" class="msg" aria-live="polite">只有标记的建塔点可以部署。双路敌人即将来袭！</div><div class="legend">🟡 疾跑：移动快　🟣 装甲：减伤　🔷 护盾：吸收伤害　🟢 医疗：恢复周围敌人生命　👑 Boss：召唤小怪</div></main>
 <script>
 (function(){
@@ -20,10 +22,10 @@ const config={gun:{cost:65,range:100,dmg:17,rate:.25,color:'#42b5ff'},cannon:{co
 let gold,life,wave,kills,towers,enemies,shots,mode,active,ended,spawned,clock,speed,last,uid,bossSpawn;
 let waveCheckpoint=null,failedWave=0;
 let audioCtx=null,musicOn=true,sfxOn=true,musicTimer=0,musicStep=0,shotSfxClock=0,audioUnlocked=false;
-function audio(){try{if(!audioUnlocked)return null;audioCtx??=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});return audioCtx}catch(e){return null}}
-function unlockAudio(){audioUnlocked=true;const ac=audio();if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});return ac}
-root.addEventListener('pointerdown',unlockAudio,{passive:true});
-root.addEventListener('keydown',unlockAudio);
+function audio(){try{if(!audioUnlocked)return null;const AudioCtor=window.AudioContext||window.webkitAudioContext;if(!AudioCtor)return null;audioCtx??=new AudioCtor();return audioCtx}catch(e){return null}}
+async function unlockAudio(){audioUnlocked=true;const ac=audio();if(!ac)return null;try{if(ac.state==='suspended')await ac.resume()}catch(e){msg('声音未能启动，请检查浏览器音频权限')}return ac}
+root.addEventListener('pointerdown',()=>{void unlockAudio()},{passive:true});
+root.addEventListener('keydown',()=>{void unlockAudio()});
 function tone(freq,duration=.12,volume=.035,waveform='sine',delay=0){let ac=audio();if(!ac)return;let t=ac.currentTime+Math.max(.025,delay),o=ac.createOscillator(),g=ac.createGain();o.type=waveform;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+duration+.02)}
 function sfx(name){if(!sfxOn)return;const now=performance.now();if(name==='shot'){if(now-shotSfxClock<110)return;shotSfxClock=now;tone(230,.07,.035,'triangle');return}
 if(name==='build')tone(520,.11,.095,'sine');
@@ -37,9 +39,9 @@ else if(name==='start'){tone(330,.12,.035);tone(490,.15,.035,'sine',.13)}}
 const melody=[220,0,261.63,329.63,0,293.66,261.63,0,196,0,246.94,293.66,0,261.63,220,0];
 function musicTick(){if(!musicOn||document.hidden||!audioUnlocked||!audioCtx||audioCtx.state!=='running')return;const n=melody[musicStep++%melody.length];if(n)tone(n,.36,.045,'sine')}
 musicTimer=setInterval(musicTick,410);
-q('#xMusic').onclick=()=>{musicOn=!musicOn;q('#xMusic').textContent=musicOn?'♫ 音乐：开':'♫ 音乐：关';if(musicOn){unlockAudio();musicTick()}};
-q('#xSfx').onclick=()=>{sfxOn=!sfxOn;q('#xSfx').textContent=sfxOn?'🔊 音效：开':'🔇 音效：关';if(sfxOn){unlockAudio();sfx('build')}};
-q('#xTest').onclick=()=>{const ac=unlockAudio();if(!ac){msg('当前浏览器不支持 Web Audio');return}if(ac.state==='suspended'){ac.resume().then(()=>{tone(523,.22,.14);tone(784,.28,.14,'sine',.24)}).catch(()=>msg('浏览器阻止了音频，请检查静音或音量设置'))}else{tone(523,.22,.14);tone(784,.28,.14,'sine',.24)}msg('正在试听：如果无声，请检查手机静音模式和媒体音量。')};
+q('#xMusic').onclick=async()=>{musicOn=!musicOn;q('#xMusic').textContent=musicOn?'♫ 音乐：开':'♫ 音乐：关';if(musicOn){const ac=await unlockAudio();if(ac?.state==='running')musicTick()}};
+q('#xSfx').onclick=async()=>{sfxOn=!sfxOn;q('#xSfx').textContent=sfxOn?'🔊 音效：开':'🔇 音效：关';if(sfxOn){const ac=await unlockAudio();if(ac?.state==='running')sfx('build')}};
+q('#xTest').onclick=async()=>{const ac=await unlockAudio();if(!ac){msg('当前浏览器不支持 Web Audio');return}if(ac.state!=='running'){msg('浏览器尚未允许声音播放，请再次点击试听');return}tone(523,.24,.2,'triangle');tone(784,.3,.2,'sine',.26);msg('♪ 正在播放试听音：请确认手机媒体音量。')};
 function snapshot(){return{gold,life,wave,kills,towers:towers.map(t=>({...t})),uid,bossSpawn}}
 function restore(cp){gold=cp.gold;life=cp.life;wave=cp.wave;kills=cp.kills;towers=cp.towers.map(t=>({...t}));uid=cp.uid;bossSpawn=cp.bossSpawn;enemies=[];shots=[];active=false;ended=false;spawned=0;clock=0;failedWave=0;last=0;q('#xRetry').hidden=true;q('#xStart').textContent='▶ 开始第 '+(wave+1)+' 波';sync()}
 q('#xRetry').onclick=()=>{if(!waveCheckpoint||!ended)return;restore(waveCheckpoint);msg('已恢复到第 '+(wave+1)+' 波开始前，准备好后再次进攻。');sfx('start')};
@@ -53,7 +55,7 @@ function spawn(type,lane,p=0){let mult=Math.pow(1.27,wave-1),hp={normal:65,fast:
 root.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>choose(b.dataset.mode));
 q('#xSpeed').onclick=()=>{speed=speed===1?2:speed===2?3:1;q('#xSpeed').textContent='×'+speed+' 速度'};
 q('#xReset').onclick=reset;
-q('#xStart').onclick=()=>{if(active||ended||wave>=15)return;audio();waveCheckpoint=snapshot();wave++;active=true;unlockAudio();sfx('start');musicTick();spawned=0;clock=0;q('#xStart').textContent='⚔️ 进攻中';msg(wave%5===0?'⚠️ Boss 入侵！':'第 '+wave+' 波：双路进攻');sync()};
+q('#xStart').onclick=()=>{if(active||ended||wave>=15)return;audio();waveCheckpoint=snapshot();wave++;active=true;unlockAudio().then(ac=>{if(ac?.state==='running'){sfx('start');musicTick()}});spawned=0;clock=0;q('#xStart').textContent='⚔️ 进攻中';msg(wave%5===0?'⚠️ Boss 入侵！':'第 '+wave+' 波：双路进攻');sync()};
 cv.addEventListener('pointerdown',ev=>{if(ended)return;let r=cv.getBoundingClientRect(),x=Math.floor((ev.clientX-r.left)*400/r.width/40),y=Math.floor((ev.clientY-r.top)*400/r.height/40);let t=towers.find(t=>t.x===x&&t.y===y);if(mode==='upgrade'){if(!t){msg('请选择已有炮塔');return}if(t.level===3){msg('已达到最高等级');return}let cost=65+t.level*65;if(gold<cost){msg('升级需要 '+cost+' 金币');return}gold-=cost;t.spent+=cost;t.level++;sfx('upgrade');msg('升级成功，Lv.'+t.level)}else if(mode==='sell'){if(!t){msg('这里没有炮塔');return}let amount=Math.floor(t.spent*.45);gold+=amount;towers=towers.filter(v=>v!==t);sfx('sell');msg('出售获得 '+amount+' 金币')}else{if(!slotSet.has(x+','+y)){msg('只能在发光的建塔点建造！');return}if(t){msg('位置已占用');return}let cost=config[mode].cost;if(gold<cost){msg('金币不足，需要 '+cost);return}gold-=cost;towers.push({x,y,type:mode,level:1,spent:cost,cool:0});sfx('build');msg('建造成功')}sync()});
 function hit(e,d,t){if(e.type==='armor'&&t.type!=='laser')d*=.32;if(e.type==='boss'&&t.type!=='laser')d*=.7;if(e.shield>0){let used=Math.min(e.shield,d);e.shield-=used;d-=used}e.hp-=d;if(t.type==='ice')e.slow=Math.max(e.slow,1.8)}
 function update(dt){if(!active)return;clock-=dt;if(spawned<total()&&clock<=0){let n=spawned,type=n%9===8?'medic':n%6===5?'shield':n%5===3?'armor':n%3===1?'fast':'normal';if(wave%5===0&&n===total()-1)type='boss';spawn(type,n%2);spawned++;clock=Math.max(.24,.7-wave*.019)}
