@@ -24,3 +24,13 @@ a{color:var(--accent)}button{font-family:inherit}button:focus-visible,a:focus-vi
 
 /* Hidden controls must stay hidden even when styled as flex buttons. */
 [hidden]{display:none!important}
+
+/* Shared cheerful H5 shell: home, match-3, tower defense and catch. */
+:root{color-scheme:light;--bg:#fffaf0;--panel:#fffdf5;--panel2:#e9f5dd;--line:#c8dfb9;--text:#30543b;--muted:#65806a;--accent:#3b8455;--action:#e8a348}
+html{background:#fffaf0}
+body{background:radial-gradient(circle at 12% 8%,#fff0ae 0,transparent 35%),linear-gradient(145deg,#fffaf0,#e9f5df 75%)!important;color:var(--text)!important;min-height:100dvh}
+.hall-heading{color:#28513b}
+.hall-nav .hall-back,.hall-action{background:#fffdf4;color:#30543b;border-color:#d3e5c8}
+.hall-game{background:#fffdf5!important;border-color:#d3e7c7;box-shadow:0 12px 32px #607e461c}
+.hall-audio button{background:#fffdf4;border-color:#c8dfb9;color:#30543b}
+.hall-tip{color:#65806a}

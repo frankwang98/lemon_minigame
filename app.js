@@ -28,7 +28,7 @@ const grid={x:16,y:175,size:(width-32)/7}
 function cell(x,y){const col=Math.floor((x-grid.x)/grid.size),row=Math.floor((y-grid.y)/grid.size);return col>=0&&col<7&&row>=0&&row<7?{col,row}:null}
 function coords(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*width/r.width,y:(e.clientY-r.top)*height/r.height}}
 let swappedOnDrag=false
-canvas.addEventListener('pointerdown',e=>{if(scene==='home')return;canvas.setPointerCapture(e.pointerId);const p=coords(e);pointer=p;swappedOnDrag=false;if(scene==='tower')tower.touch(p.x,p.y)})
+canvas.addEventListener('pointerdown',e=>{if(scene==='home')return; if(scene==='match'&&e.pointerType==='touch'&&e.clientX>window.innerWidth-28){pointer=null;return;}canvas.setPointerCapture(e.pointerId);const p=coords(e);pointer=p;swappedOnDrag=false;if(scene==='tower')tower.touch(p.x,p.y)})
 canvas.addEventListener('pointermove',e=>{
  if(scene!=='match'||!pointer||match.gamePhase!=='playing'||match.resolving||selectedTool)return
  const p=coords(e),a=cell(pointer.x,pointer.y)
