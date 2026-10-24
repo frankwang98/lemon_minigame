@@ -22,7 +22,7 @@ timer=setInterval(()=>{if(ended||document.hidden)return;seconds=Math.max(0,secon
 function metrics(){
 $('level').textContent=level;$('left').textContent=remaining;$('score').textContent=score;
 $('time').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
-$('time').style.color=seconds<=30?'#ff9d8c':'#fff';
+$('time').classList.toggle('time-warning',seconds<=30);
 $('progress').style.width=(total?(total-remaining)/total*100:0)+'%';
 }
 function render(){

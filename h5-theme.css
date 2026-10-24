@@ -34,3 +34,31 @@ body{background:radial-gradient(circle at 12% 8%,#fff0ae 0,transparent 35%),line
 .hall-game{background:#fffdf5!important;border-color:#d3e7c7;box-shadow:0 12px 32px #607e461c}
 .hall-audio button{background:#fffdf4;border-color:#c8dfb9;color:#30543b}
 .hall-tip{color:#65806a}
+
+/* System-following theme, shared by the hall and all three H5 games. */
+@media (prefers-color-scheme: dark){
+ :root{color-scheme:dark;--bg:#121f1a;--panel:#20372b;--panel2:#2b4937;--line:#4e7059;--text:#edf6e9;--muted:#b2cbb7;--accent:#a6e2b3}
+ html{background:#121f1a}
+ body,body.hall-light,body.catch-light{background:radial-gradient(circle at 12% 5%,#294735,transparent 42%),linear-gradient(155deg,#15271e,#101e19)!important;color:#edf6e9!important}
+ .hall-heading,.hall-light .hall-heading,.catch-light .hall-heading{color:#edf6e9}
+ .hall-nav .hall-back,.hall-light .hall-nav .hall-back,.catch-light .hall-back,.hall-action{background:#2b4937;color:#edf6e9;border-color:#55765c}
+ .hall-game,.game.hall-game,.tower-light .game.hall-game,.catch-light .game.hall-game,.hall-light .tiles .tile.hall-game,.hall-light .tiles .tile:nth-child(2),.hall-light .tiles .tile:nth-child(3),.hall-light .game-area .frame.hall-game{background:#20372b!important;color:#edf6e9;border-color:#456b50;box-shadow:0 12px 32px #09150d55}
+ .hall-light .tiles .tile small,.hall-light .hint,.hall-light footer,.hall-light .game-area #instructions,.hall-tip{color:#b2cbb7}
+ .hall-audio button,.hall-light .game-area .hall-audio button,.catch-light .tool,.tower-light .tools button,.tower-light .controls button:not(.main),.tower-light .sound-switch button{background:#2b4937;color:#edf6e9;border-color:#52745a}
+ .tower-light .stat,.tower-light .msg,.catch-light .stat{background:#2b4937;color:#b2cbb7}
+ .tower-light .stat b,.catch-light .stat,.catch-light .tray-head{color:#edf6e9}
+ .tower-light .small,.tower-light .legend,.catch-light .hintline{color:#b2cbb7}
+ .tower-light .tools button.sel{background:#5a4d2e;outline-color:#f3ca7d}
+ .tower-light canvas{background:#294d38;border-color:#4f7956}
+ .catch-light .board{background:radial-gradient(ellipse at 50% 40%,#5c8255,#365e41 65%,#254634);border-color:#618c65}
+ .catch-light .slot{background:#193327;border-color:#52765a}
+ .catch-light .slot.filled{background:#e7d4a6}
+ .catch-light .progress{background:#1b3326}
+ .catch-light .message{color:#f0d08b}
+ .catch-light .modal{background:#10241ded;color:#edf6e9}
+ .catch-light .modal #summary{color:#b2cbb7}
+ .match-caption{color:#e2f1dd}
+}
+.catch-light #time{color:inherit}
+.catch-light #time.time-warning{color:#d75037}
+@media (prefers-color-scheme:dark){.catch-light #time.time-warning{color:#ffad95}}
