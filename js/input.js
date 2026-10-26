@@ -32,8 +32,6 @@ export class InputManager {
   }
 
   handleTouchStart(e) {
-    if (globalThis.lemonScene && globalThis.lemonScene() !== 'match3') return
-    if (e.touches[0].clientY < 55 && e.touches[0].clientX > this.ui.width - 80) return
     const touch = e.touches[0]
     const x = touch.clientX
     const y = touch.clientY
@@ -127,7 +125,6 @@ export class InputManager {
   }
 
   handleTouchMove(e) {
-    if (globalThis.lemonScene && globalThis.lemonScene() !== 'match3') return
     if (!this.dragging || !this.startCell) return
 
     const touch = e.touches[0]

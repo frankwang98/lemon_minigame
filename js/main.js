@@ -3,10 +3,7 @@ import { GameState } from './game-state.js'
 import { Renderer } from './renderer.js'
 import { UIManager } from './ui.js'
 import { InputManager } from './input.js'
-import { AudioManager } from './audio.js'
 import { AudioSystem } from './audio-system.js'
-import { TowerDefense } from './tower-defense.js'
-import { drawHome, homeChoice } from './home.js'
 
 const { windowWidth, windowHeight, pixelRatio } = wx.getSystemInfoSync()
 
@@ -28,40 +25,11 @@ const gameState = new GameState()
 const renderer = new Renderer(canvas, ctx, gameState, logicalWidth, logicalHeight)
 const uiManager = new UIManager(canvas, ctx, gameState, logicalWidth, logicalHeight)
 
-const towerDefense = new TowerDefense(logicalWidth, logicalHeight)
-let scene = 'home'
-globalThis.lemonScene = () => scene
 let lastTick = Date.now()
-wx.onTouchStart(e => {
-  const touch=e.touches&&e.touches[0]
-  if(!touch)return
-  const {clientX:x,clientY:y}=touch
-  if(scene==='home'){
-    const choice=homeChoice(y,logicalHeight)
-    if(choice){scene=choice;lastTick=Date.now();if(choice==='tower')towerDefense.reset()}
-  } else if(scene==='tower') {
-    if(y<50&&x>logicalWidth-80){scene='home';return}
-    towerDefense.touch(x,y)
-  } else if(scene==='match3'&&y<55&&x>logicalWidth-80){scene='home'}
-})
 
 function renderFrame() {
   const now = Date.now()
 
-  if (scene==='home') {
-    drawHome(ctx,logicalWidth,logicalHeight)
-    requestAnimationFrame(renderFrame)
-    lastTick=now
-    return
-  }
-  if(scene==='tower') {
-    towerDefense.update((now-lastTick)/1000)
-    towerDefense.draw(ctx)
-    ctx.fillStyle='#3F5D36';ctx.textAlign='right';ctx.font='16px sans-serif';ctx.fillText('返回',logicalWidth-16,36)
-    lastTick=now
-    requestAnimationFrame(renderFrame)
-    return
-  }
   if (gameState.gamePhase === 'playing') {
     if (now - lastTick >= 1000) {
       gameState.timeLeft = Math.max(0, gameState.timeLeft - Math.floor((now - lastTick) / 1000))
@@ -89,7 +57,6 @@ function renderFrame() {
 
   renderer.render(now)
   uiManager.drawButtons()
-  ctx.fillStyle='#3F5D36';ctx.textAlign='right';ctx.font='16px sans-serif';ctx.fillText('返回',logicalWidth-16,36)
 
   requestAnimationFrame(renderFrame)
 }
@@ -118,10 +85,6 @@ gameState.loadLevel(0)
 new InputManager(canvas, renderer, uiManager, gameState, onStateChanged, onUseTool)
 
 renderFrame()
-
-// audio
-const audio = new AudioManager()
-audio.init()
 
 // audio system - 合成音效 + BGM
 const audioSystem = new AudioSystem()
