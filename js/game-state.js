@@ -257,15 +257,10 @@ export class GameState {
 
     this.removeMatches(matches)
     this.applyGravity()
-    const next = this.findMatches()
-    if (next.length) {
-      this.combo++
-      this.resolveBoardWithAnimation(Date.now())
-    } else {
-      this.combo = 0
-      this.resolving = false
-      if (!this.hasValidMove()) this.shuffleBoard()
-    }
+    // 恢复最初的一次交换、一次消除节奏，不自动连锁消除。
+    this.combo = 0
+    this.resolving = false
+    if (!this.hasValidMove()) this.shuffleBoard()
   }
 
   trySwapAndResolve(a, b, now) {
